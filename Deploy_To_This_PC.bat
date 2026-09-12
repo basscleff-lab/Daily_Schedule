@@ -1,0 +1,148 @@
+@echo off
+setlocal enabledelayedexpansion
+title Sabrina Work Hub - PC Setup & Deployment Tool
+color 0B
+
+echo ======================================================================
+echo           SABRINA WORK HUB - PC SETUP & DEPLOYMENT TOOL
+echo                  Client: Optima Windows and Doors
+echo ======================================================================
+echo.
+
+set "TARGET_DIR=C:\Apps\Daily_Schedule"
+set "SOURCE_DIR=%~dp0"
+
+:: Strip trailing backslash from SOURCE_DIR if present
+if "%SOURCE_DIR:~-1%"=="\" set "SOURCE_DIR=%SOURCE_DIR:~0,-1%"
+
+echo [1/5] Checking System Compatibility...
+powershell.exe -Command "if ($PSVersionTable.PSVersion.Major -ge 5) { exit 0 } else { exit 1 }"
+if %ERRORLEVEL% neq 0 (
+    color 0C
+    echo [ERROR] Windows PowerShell 5.1 or newer was not detected.
+    echo Please update Windows or install Windows Management Framework 5.1.
+    pause
+    exit /b 1
+)
+echo       - Windows PowerShell 5.1: OK
+powershell.exe -Command "Add-Type -AssemblyName PresentationFramework; exit 0"
+if %ERRORLEVEL% neq 0 (
+    color 0C
+    echo [ERROR] WPF PresentationFramework is not available on this machine.
+    pause
+    exit /b 1
+)
+echo       - Windows Presentation Framework (WPF): OK
+echo.
+
+echo [2/5] Preparing Target Folder: %TARGET_DIR%...
+if not exist "%TARGET_DIR%" mkdir "%TARGET_DIR%"
+if not exist "%TARGET_DIR%\data" mkdir "%TARGET_DIR%\data"
+if not exist "%TARGET_DIR%\data\backups" mkdir "%TARGET_DIR%\data\backups"
+echo       - Folders created / verified.
+echo.
+
+echo [3/5] Deploying Application Files...
+:: Preserve existing shifts.json and callbacks.json if present
+if exist "%TARGET_DIR%\data\shifts.json" (
+    echo       - Found existing shifts.json! Creating automatic backup...
+    for /f "tokens=2 delims==" %%I in ('wmic os get localdatetime /value') do set "dt=%%I"
+    set "timestamp=!dt:~0,8!_!dt:~8,6!"
+    copy /y "%TARGET_DIR%\data\shifts.json" "%TARGET_DIR%\data\backups\shifts_backup_predeploy_!timestamp!.json" >nul
+    echo       - Backup saved to: %TARGET_DIR%\data\backups\shifts_backup_predeploy_!timestamp!.json
+)
+if exist "%TARGET_DIR%\data\callbacks.json" (
+    echo       - Found existing callbacks.json! Creating automatic backup...
+    for /f "tokens=2 delims==" %%I in ('wmic os get localdatetime /value') do set "dt=%%I"
+    set "timestamp=!dt:~0,8!_!dt:~8,6!"
+    copy /y "%TARGET_DIR%\data\callbacks.json" "%TARGET_DIR%\data\backups\callbacks_backup_predeploy_!timestamp!.json" >nul
+    echo       - Backup saved to: %TARGET_DIR%\data\backups\callbacks_backup_predeploy_!timestamp!.json
+)
+if exist "%TARGET_DIR%\data\calls.json" (
+    echo       - Found existing calls.json! Creating automatic backup...
+    for /f "tokens=2 delims==" %%I in ('wmic os get localdatetime /value') do set "dt=%%I"
+    set "timestamp=!dt:~0,8!_!dt:~8,6!"
+    copy /y "%TARGET_DIR%\data\calls.json" "%TARGET_DIR%\data\backups\calls_backup_predeploy_!timestamp!.json" >nul
+    echo       - Backup saved to: %TARGET_DIR%\data\backups\calls_backup_predeploy_!timestamp!.json
+)
+if exist "%TARGET_DIR%\data\sales_reps.json" (
+    echo       - Found existing sales_reps.json! Creating automatic backup...
+    for /f "tokens=2 delims==" %%I in ('wmic os get localdatetime /value') do set "dt=%%I"
+    set "timestamp=!dt:~0,8!_!dt:~8,6!"
+    copy /y "%TARGET_DIR%\data\sales_reps.json" "%TARGET_DIR%\data\backups\sales_reps_backup_predeploy_!timestamp!.json" >nul
+    echo       - Backup saved to: %TARGET_DIR%\data\backups\sales_reps_backup_predeploy_!timestamp!.json
+)
+
+:: Copy Core Files (excluding git, tests, and temporary storage)
+robocopy "%SOURCE_DIR%" "%TARGET_DIR%" floating_toolbar.ps1 Launch_Floating_Toolbar.bat Verify_PC_Compatibility.bat index.html app.js styles.css popup.html popup.js popup.css README.md REQUIREMENTS.md /IS /IT /nfl /ndl /njh /njs
+
+:: Copy initial data files if target doesn't have them yet (NEVER overwrite existing data)
+if not exist "%TARGET_DIR%\data\shifts.json" (
+    if exist "%SOURCE_DIR%\data\shifts.json" (
+        copy /y "%SOURCE_DIR%\data\shifts.json" "%TARGET_DIR%\data\shifts.json" >nul
+    )
+)
+if not exist "%TARGET_DIR%\data\callbacks.json" (
+    if exist "%SOURCE_DIR%\data\callbacks.json" (
+        copy /y "%SOURCE_DIR%\data\callbacks.json" "%TARGET_DIR%\data\callbacks.json" >nul
+    )
+)
+if not exist "%TARGET_DIR%\data\calls.json" (
+    if exist "%SOURCE_DIR%\data\calls.json" (
+        copy /y "%SOURCE_DIR%\data\calls.json" "%TARGET_DIR%\data\calls.json" >nul
+    )
+)
+if not exist "%TARGET_DIR%\data\sales_reps.json" (
+    if exist "%SOURCE_DIR%\data\sales_reps.json" (
+        copy /y "%SOURCE_DIR%\data\sales_reps.json" "%TARGET_DIR%\data\sales_reps.json" >nul
+    )
+)
+if not exist "%TARGET_DIR%\data\shifts_data.js" (
+    if exist "%SOURCE_DIR%\data\shifts_data.js" (
+        copy /y "%SOURCE_DIR%\data\shifts_data.js" "%TARGET_DIR%\data\shifts_data.js" >nul
+    )
+)
+echo       - Core application files successfully deployed.
+echo.
+
+echo [4/5] Creating Desktop Shortcuts...
+powershell.exe -NoProfile -ExecutionPolicy Bypass -Command ^
+    "$ws = New-Object -ComObject WScript.Shell;" ^
+    "$desktop = [Environment]::GetFolderPath('Desktop');" ^
+    "$shortcutPath = Join-Path $desktop 'Sabrina Work Tracker.lnk';" ^
+    "$sc = $ws.CreateShortcut($shortcutPath);" ^
+    "$sc.TargetPath = '%TARGET_DIR%\Launch_Floating_Toolbar.bat';" ^
+    "$sc.WorkingDirectory = '%TARGET_DIR%';" ^
+    "$sc.Description = 'Sabrina Floating Work Tracker - Optima Windows and Doors';" ^
+    "$sc.IconLocation = 'shell32.dll,265';" ^
+    "$sc.Save();" ^
+    "$reportPath = Join-Path $desktop 'Sabrina Invoices & Reports.lnk';" ^
+    "$rc = $ws.CreateShortcut($reportPath);" ^
+    "$rc.TargetPath = '%TARGET_DIR%\index.html';" ^
+    "$rc.WorkingDirectory = '%TARGET_DIR%';" ^
+    "$rc.Description = 'Sabrina Shift History and Invoices';" ^
+    "$rc.IconLocation = 'shell32.dll,264';" ^
+    "$rc.Save();"
+
+echo       - Created "Sabrina Work Tracker" shortcut on Desktop.
+echo       - Created "Sabrina Invoices & Reports" shortcut on Desktop.
+echo.
+
+echo [5/5] Verification Complete!
+color 0A
+echo ======================================================================
+echo                     INSTALLATION SUCCESSFUL!
+echo ======================================================================
+echo.
+echo Application location: %TARGET_DIR%
+echo Shortcuts are now on Sabrina's Desktop.
+echo.
+set /p "LAUNCH=Would you like to launch the Floating Toolbar now? (Y/N): "
+if /i "%LAUNCH%"=="Y" (
+    start "" "%TARGET_DIR%\Launch_Floating_Toolbar.bat"
+)
+
+echo.
+echo You can safely remove the USB drive.
+pause
+exit /b 0

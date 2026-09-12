@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Work Hub & Shift Tracker | Sabrina - Optima Windows and Doors</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⏱️</text></svg>">
+</head>
+<body>
+
+  <div class="app-layout">
+    
+    <!-- Top Header -->
+    <header class="app-header">
+      <div class="brand-section">
+        <h1>
+          <span>⏱️ Work Hub & Time Tracker</span>
+          <span class="badge">Optima Windows & Doors</span>
+          <span class="version-badge" id="app-version-badge">v1.5.0</span>
+        </h1>
+        <p class="brand-subtitle">Sabrina's Daily Appointment Booking & Time Log</p>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 1rem;">
+        <button class="btn-theme-toggle" id="btn-web-theme" title="Switch Theme (Dark, Light, High-Vis)">
+          <span>🎨</span>
+          <span id="web-theme-label">Theme: Dark</span>
+        </button>
+        <div class="header-clock-box">
+          <div class="live-toronto-clock" id="toronto-live-clock">12:00:00 PM</div>
+          <div class="live-toronto-date" id="toronto-live-date">Toronto Time (EST/EDT)</div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Audio Recording Transport Bar (DAW Style) -->
+    <section class="transport-container" id="transport-bar">
+      <div class="transport-header">
+        <div style="display: flex; align-items: center; gap: 1rem;">
+          <div class="status-pill" id="status-pill">
+            <span class="status-indicator-dot"></span>
+            <span id="status-text">CLOCKED OUT</span>
+          </div>
+          <span style="font-size: 0.8rem; color: #94a3b8;" id="active-shift-banner">Ready to start shift</span>
+        </div>
+      </div>
+
+      <!-- Main Controls & Readout -->
+      <div class="transport-main-bar">
+        
+        <!-- Action Buttons -->
+        <div class="transport-btn-group">
+          <button class="btn-transport btn-start" id="btn-start-rec" title="Clock In / Start Shift">
+            <span>●</span>
+            <span>START / REC</span>
+          </button>
+          
+          <button class="btn-transport btn-pause" id="btn-pause" disabled title="Pause Shift (Lunch / Break / Split)">
+            <span>⏸</span>
+            <span>PAUSE</span>
+          </button>
+
+          <button class="btn-transport btn-stop" id="btn-stop" disabled title="Clock Out / End Shift Segment">
+            <span>⏹</span>
+            <span>CLOCK OUT</span>
+          </button>
+        </div>
+
+        <!-- Digital Readout Box -->
+        <div class="readout-panel">
+          <div class="readout-item">
+            <span class="readout-label">Current Session</span>
+            <span class="readout-value" id="session-readout">00:00:00</span>
+          </div>
+
+          <div class="readout-item" style="border-left: 1px solid #334155; padding-left: 1.5rem;">
+            <span class="readout-label">Today's Total</span>
+            <span class="readout-value total-val" id="today-readout">0h 00m</span>
+          </div>
+        </div>
+
+        <!-- Activity & Split Shift Tag -->
+        <div class="activity-display-box">
+          <span class="readout-label" style="margin-bottom: 0.35rem;">Active Task</span>
+          <div class="current-activity-tag" id="current-activity-display">📋 Ready</div>
+        </div>
+
+      </div>
+
+      <!-- One-Click Activity Quick Selector -->
+      <div class="activity-toolbar">
+        <div class="activity-toolbar-title">Quick Activity Selector (Click to switch current focus):</div>
+        <div class="activity-buttons" id="activity-btn-group">
+          <button class="act-btn" data-act="inbound_call">📞 Inbound Call</button>
+          <button class="act-btn" data-act="outbound_call">📱 Outbound Call</button>
+          <button class="act-btn" data-act="text_sms">💬 Text / SMS Follow-up</button>
+          <button class="act-btn" data-act="email_in">📥 Email Inbound</button>
+          <button class="act-btn" data-act="email_out">📤 Email Outbound</button>
+          <button class="act-btn active" data-act="off_phone_work">📋 Off-Phone / Booking Admin</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Quick Stats Grid -->
+    <div class="quick-stats-grid">
+      <div class="stat-box">
+        <div>
+          <div class="stat-title">Shift Progress</div>
+          <div class="stat-number" id="stat-shift-hours">0h 00m</div>
+          <small style="color: #64748b; font-size: 0.75rem;">Split Shift Target: 8h (9-3 & 5-7)</small>
+        </div>
+        <div style="font-size: 2rem;">⏳</div>
+      </div>
+
+      <div class="stat-box">
+        <div>
+          <div class="stat-title">Phone vs Off-Phone</div>
+          <div class="stat-number" style="font-size: 1.1rem; margin-top: 0.25rem;">
+            <span style="color: #0284c7;" id="stat-phone-time">📞 0m</span> / 
+            <span style="color: #10b981;" id="stat-offphone-time">📋 0m</span>
+          </div>
+          <small style="color: #64748b; font-size: 0.75rem;" id="stat-phone-ratio">0% phone time</small>
+        </div>
+        <div style="font-size: 2rem;">📊</div>
+      </div>
+
+      <div class="stat-box">
+        <div>
+          <div class="stat-title">Appointments Booked Today</div>
+          <div class="stat-number" id="stat-appts-count">0</div>
+          <small style="color: #64748b; font-size: 0.75rem;">Optima Windows & Doors</small>
+        </div>
+        <div class="appointment-stepper">
+          <button class="stepper-btn" id="btn-appt-minus" title="Decrease count">-</button>
+          <button class="stepper-btn" id="btn-appt-plus" title="Booked an Appointment!" style="background:#22c55e; color:white; border-color:#16a34a;">+</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Navigation Tabs -->
+    <nav class="tab-navigation">
+      <button class="tab-btn active" data-tab="tab-tracker">⏱️ Today's Shift &amp; Log</button>
+      <button class="tab-btn" data-tab="tab-daily-summary">📊 Daily Call Summary (PDF)</button>
+      <button class="tab-btn" data-tab="tab-callbacks">📞 Callbacks &amp; Reminders</button>
+      <button class="tab-btn" data-tab="tab-timesheet">📅 Timesheet History</button>
+      <button class="tab-btn" data-tab="tab-telus">📞 Telus Log Extrapolator</button>
+      <button class="tab-btn" data-tab="tab-invoice">📄 Invoice for Optima (PDF)</button>
+      <button class="tab-btn" data-tab="tab-settings">⚙️ Settings &amp; Backup</button>
+    </nav>
+
+    <!-- TAB 1: Today's Shift & Log -->
+    <main class="tab-content active" id="tab-tracker">
+      <div class="card">
+        <div class="card-title">
+          <span>Today's Shift Log (<span id="today-date-header"></span>)</span>
+          <button class="btn-secondary" id="btn-open-manual-modal" style="font-size: 0.8rem; padding: 0.35rem 0.75rem;">+ Add Missed Time</button>
+        </div>
+
+        <div id="today-shifts-empty" style="text-align: center; padding: 2rem; color: #94a3b8;">
+          No shifts clocked in yet today. Click <strong>START / REC</strong> above to begin your shift!
+        </div>
+
+        <div class="shift-timeline" id="today-shifts-list">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+
+      <!-- Split Shift Helper Box -->
+      <div class="card" style="background: #f8fafc; border-left: 4px solid #3b82f6;">
+        <h3 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 0.35rem; color: #1e293b;">💡 Split Shift Reminder</h3>
+        <p style="font-size: 0.85rem; color: #475569;">
+          • <strong>Shift 1:</strong> Typically 9:00 AM – 3:00 PM (6 hours)<br>
+          • <strong>Midday Break:</strong> Clock out or pause at 3:00 PM.<br>
+          • <strong>Shift 2:</strong> Resume from 5:00 PM – 7:00 PM (2 hours).<br>
+          Both shifts will automatically merge into today's total billing hours for Optima Windows & Doors.
+        </p>
+      </div>
+    </main>
+
+    <!-- TAB: Daily Call Summary & Supervisor Report -->
+    <main class="tab-content" id="tab-daily-summary">
+      <div class="card no-print" style="margin-bottom: 1.5rem;">
+        <div class="card-title">
+          <span>📊 Daily Call Summary &amp; Supervisor Report</span>
+          <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <button class="btn-primary" id="btn-print-daily-summary">🖨️ Print / Save as PDF</button>
+            <button class="btn-secondary" id="btn-copy-daily-summary-text">📋 Copy Text Summary</button>
+          </div>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 0.75rem;">
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label" for="daily-summary-date">Report Date:</label>
+            <input type="date" class="form-input" id="daily-summary-date" style="max-width: 200px;">
+          </div>
+          <span style="font-size: 0.85rem; color: #64748b; margin-top: 1.2rem;">
+            💡 <em>Tip: You can edit any text, outcome, or notes directly on the report below before saving as PDF!</em>
+          </span>
+        </div>
+
+        <!-- Inline Quick-Log Call Row (No Popups Needed) -->
+        <div style="background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px; padding: 0.85rem; margin-top: 0.75rem;">
+          <div style="font-size: 0.85rem; font-weight: 700; color: var(--primary); margin-bottom: 0.5rem;">+ Quick Log Call or Consultation (Inline)</div>
+          <div style="display: grid; grid-template-columns: 1.2fr 1fr 1.2fr 0.8fr 1.5fr auto; gap: 0.5rem; align-items: flex-end;">
+            <div>
+              <label class="form-label" style="font-size: 0.75rem; margin-bottom: 0.2rem;" for="inline-call-name">Customer Name:</label>
+              <input type="text" class="form-input" id="inline-call-name" placeholder="e.g. David Miller" style="font-size: 0.85rem; padding: 0.35rem 0.5rem;">
+            </div>
+            <div>
+              <label class="form-label" style="font-size: 0.75rem; margin-bottom: 0.2rem;" for="inline-call-phone">Phone Number:</label>
+              <input type="text" class="form-input" id="inline-call-phone" placeholder="e.g. 416-555-0188" style="font-size: 0.85rem; padding: 0.35rem 0.5rem; color: var(--primary); font-weight: 700;">
+            </div>
+            <div>
+              <label class="form-label" style="font-size: 0.75rem; margin-bottom: 0.2rem;" for="inline-call-type">Call Type:</label>
+              <select class="form-input" id="inline-call-type" style="font-size: 0.85rem; padding: 0.35rem 0.5rem;">
+                <option value="Appointment Booked">Appointment Booked</option>
+                <option value="Inbound Inquiry">Inbound Inquiry</option>
+                <option value="Outbound Call">Outbound Call</option>
+                <option value="Follow-Up Required">Follow-Up Required</option>
+                <option value="Customer Service">Customer Service</option>
+              </select>
+            </div>
+            <div>
+              <label class="form-label" style="font-size: 0.75rem; margin-bottom: 0.2rem;" for="inline-call-time">Time:</label>
+              <input type="text" class="form-input" id="inline-call-time" placeholder="e.g. 10:30 AM" style="font-size: 0.85rem; padding: 0.35rem 0.5rem;">
+            </div>
+            <div>
+              <label class="form-label" style="font-size: 0.75rem; margin-bottom: 0.2rem;" for="inline-call-outcome">Outcome / Notes:</label>
+              <input type="text" class="form-input" id="inline-call-outcome" placeholder="e.g. Quoting 8 casement windows" style="font-size: 0.85rem; padding: 0.35rem 0.5rem;">
+            </div>
+            <div>
+              <button type="button" class="btn-primary" id="btn-inline-add-call" style="font-size: 0.85rem; padding: 0.4rem 0.9rem; background: var(--success); border-color: var(--success);">+ Log Call</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Printable / Editable PDF Preview Sheet -->
+      <div class="pdf-sheet" id="daily-summary-sheet">
+        <div class="report-header" style="border-bottom: 2px solid #0f172a; padding-bottom: 1rem; margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: flex-start;">
+          <div>
+            <h2 style="font-size: 1.5rem; font-weight: 800; color: #0f172a; letter-spacing: -0.02em; margin: 0;">OPTIMA WINDOWS AND DOORS</h2>
+            <p style="font-size: 0.85rem; color: #475569; margin: 0.2rem 0 0 0;">Customer Appointment Booking &amp; Daily Activity Report</p>
+          </div>
+          <div style="text-align: right;">
+            <span style="display: inline-block; background: #0f172a; color: white; padding: 0.25rem 0.6rem; border-radius: 4px; font-weight: 800; font-size: 0.8rem; letter-spacing: 0.05em;">DAILY CALL REPORT</span>
+            <p style="font-size: 0.85rem; color: #334155; font-weight: 700; margin: 0.35rem 0 0 0;" id="report-display-date">Date: September 11, 2026</p>
+          </div>
+        </div>
+
+        <div class="report-meta-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; background: #f8fafc; padding: 1rem; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 1.5rem;">
+          <div>
+            <div style="font-size: 0.75rem; text-transform: uppercase; color: #64748b; font-weight: 700;">Representative</div>
+            <div style="font-size: 0.95rem; font-weight: 700; color: #0f172a;" contenteditable="true" id="report-rep-name">Sabrina</div>
+          </div>
+          <div>
+            <div style="font-size: 0.75rem; text-transform: uppercase; color: #64748b; font-weight: 700;">Supervisor / Client</div>
+            <div style="font-size: 0.95rem; font-weight: 700; color: #0f172a;" contenteditable="true" id="report-supervisor-name">Optima Windows &amp; Doors</div>
+          </div>
+          <div>
+            <div style="font-size: 0.75rem; text-transform: uppercase; color: #64748b; font-weight: 700;">Total Shift Hours</div>
+            <div style="font-size: 0.95rem; font-weight: 700; color: #0284c7;" id="report-total-hours">0h 00m</div>
+          </div>
+          <div>
+            <div style="font-size: 0.75rem; text-transform: uppercase; color: #64748b; font-weight: 700;">Phone vs Admin</div>
+            <div style="font-size: 0.95rem; font-weight: 700; color: #0f172a;" id="report-phone-split">0m phone / 0m admin</div>
+          </div>
+        </div>
+
+        <!-- KPI Badges -->
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.5rem;">
+          <div style="border: 1px solid #bbf7d0; background: #f0fdf4; border-radius: 8px; padding: 0.85rem; text-align: center;">
+            <div style="font-size: 1.6rem; font-weight: 800; color: #16a34a;" id="report-kpi-appts">0</div>
+            <div style="font-size: 0.8rem; font-weight: 700; color: #15803d; text-transform: uppercase;">Appointments Booked</div>
+          </div>
+          <div style="border: 1px solid #bae6fd; background: #f0f9ff; border-radius: 8px; padding: 0.85rem; text-align: center;">
+            <div style="font-size: 1.6rem; font-weight: 800; color: #0284c7;" id="report-kpi-calls">0</div>
+            <div style="font-size: 0.8rem; font-weight: 700; color: #0369a1; text-transform: uppercase;">Total Calls &amp; Leads</div>
+          </div>
+          <div style="border: 1px solid #fef08a; background: #fefce8; border-radius: 8px; padding: 0.85rem; text-align: center;">
+            <div style="font-size: 1.6rem; font-weight: 800; color: #d97706;" id="report-kpi-callbacks">0</div>
+            <div style="font-size: 0.8rem; font-weight: 700; color: #b45309; text-transform: uppercase;">Scheduled Callbacks</div>
+          </div>
+        </div>
+
+        <!-- Calls & Appointments Table -->
+        <div style="margin-bottom: 1.5rem;">
+          <h4 style="font-size: 0.95rem; font-weight: 800; color: #0f172a; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.03em;">Calls &amp; Booked Consultations Log</h4>
+          <table class="timesheet-table" style="font-size: 0.85rem;">
+            <thead>
+              <tr style="background: #f1f5f9;">
+                <th style="width: 85px;">Time</th>
+                <th style="width: 170px;">Customer Name</th>
+                <th style="width: 140px;">Phone Number</th>
+                <th>Activity / Outcome</th>
+                <th style="width: 140px;">Follow-up Status</th>
+                <th class="no-print" style="width: 50px;">Action</th>
+              </tr>
+            </thead>
+            <tbody id="report-calls-tbody">
+              <!-- Dynamically populated rows with contenteditable cells -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Editable Supervisor Notes Section -->
+        <div style="margin-bottom: 1.5rem;">
+          <h4 style="font-size: 0.95rem; font-weight: 800; color: #0f172a; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.03em;">Representative Notes &amp; Supervisor Handover</h4>
+          <div class="editable-document-box" id="report-editable-notes" contenteditable="true">All booked consultations have been verified for Optima Windows and Doors. Evening callback queue organized for customer follow-ups.</div>
+        </div>
+
+        <!-- Sign-off -->
+        <div style="border-top: 1px solid #cbd5e1; padding-top: 1rem; margin-top: 2rem; display: flex; justify-content: space-between; font-size: 0.85rem; color: #64748b;">
+          <div>
+            <strong>Submitted by:</strong> <span contenteditable="true">Sabrina (Appointment Coordinator)</span>
+          </div>
+          <div>
+            <strong>Approved by Supervisor:</strong> <span contenteditable="true" style="border-bottom: 1px dotted #94a3b8; display: inline-block; min-width: 150px;">Optima Windows &amp; Doors</span>
+          </div>
+        </div>
+      </div>
+    </main>
+    <main class="tab-content" id="tab-callbacks">
+      <div class="card">
+        <div class="card-title">
+          <span>📞 Callbacks & Reminders</span>
+          <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <button class="btn-secondary" id="btn-copy-all-cb-excel" style="font-size: 0.85rem;">📋 Copy All for Excel (TSV)</button>
+            <button class="btn-secondary" id="btn-export-cb-csv" style="font-size: 0.85rem;">📥 Export CSV</button>
+          </div>
+        </div>
+
+        <!-- Inline Add Callback Form (No Popups Needed!) -->
+        <div style="background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px; padding: 0.85rem; margin-bottom: 1.25rem;">
+          <div style="font-size: 0.85rem; font-weight: 700; color: var(--primary); margin-bottom: 0.6rem;">+ Add New Callback Reminder (Inline)</div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.6rem;">
+            <div>
+              <label class="form-label" style="font-size: 0.75rem; margin-bottom: 0.2rem;" for="inline-cb-name">Contact Name:</label>
+              <input type="text" class="form-input" id="inline-cb-name" placeholder="e.g. Sarah Jenkins" style="font-size: 0.85rem; padding: 0.35rem 0.5rem;">
+            </div>
+            <div>
+              <label class="form-label" style="font-size: 0.75rem; margin-bottom: 0.2rem;" for="inline-cb-phone">Phone Number:</label>
+              <input type="text" class="form-input" id="inline-cb-phone" placeholder="e.g. 416-555-0188" style="font-size: 0.85rem; padding: 0.35rem 0.5rem; color: var(--primary); font-weight: 700;">
+            </div>
+          </div>
+          <div style="display: grid; grid-template-columns: 140px 120px 1fr; gap: 0.75rem; margin-bottom: 0.6rem; align-items: flex-end;">
+            <div>
+              <label class="form-label" style="font-size: 0.75rem; margin-bottom: 0.2rem;" for="inline-cb-date">Date:</label>
+              <input type="date" class="form-input" id="inline-cb-date" style="font-size: 0.85rem; padding: 0.35rem 0.5rem;">
+            </div>
+            <div>
+              <label class="form-label" style="font-size: 0.75rem; margin-bottom: 0.2rem;" for="inline-cb-time">Time:</label>
+              <input type="text" class="form-input" id="inline-cb-time" placeholder="e.g. 02:30 PM" style="font-size: 0.85rem; padding: 0.35rem 0.5rem; font-weight: 700; color: var(--warning);">
+            </div>
+            <div>
+              <label class="form-label" style="font-size: 0.75rem; margin-bottom: 0.2rem;">Adjust Time (+/-):</label>
+              <div style="display: flex; gap: 0.25rem; flex-wrap: wrap;">
+                <button type="button" class="stepper-chip" data-target="inline-cb-time" data-delta="-60">-1h</button>
+                <button type="button" class="stepper-chip" data-target="inline-cb-time" data-delta="-30">-30m</button>
+                <button type="button" class="stepper-chip" data-target="inline-cb-time" data-delta="-15">-15m</button>
+                <button type="button" class="stepper-chip" data-target="inline-cb-time" data-delta="-10">-10m</button>
+                <button type="button" class="stepper-chip" data-target="inline-cb-time" data-delta="-5">-5m</button>
+                <button type="button" class="stepper-chip" data-target="inline-cb-time" data-delta="5">+5m</button>
+                <button type="button" class="stepper-chip" data-target="inline-cb-time" data-delta="10">+10m</button>
+                <button type="button" class="stepper-chip" data-target="inline-cb-time" data-delta="15">+15m</button>
+                <button type="button" class="stepper-chip" data-target="inline-cb-time" data-delta="30">+30m</button>
+                <button type="button" class="stepper-chip" data-target="inline-cb-time" data-delta="60">+1h</button>
+                <button type="button" class="stepper-chip" id="btn-inline-cb-today">Today</button>
+                <button type="button" class="stepper-chip" id="btn-inline-cb-tomorrow">Tom</button>
+              </div>
+            </div>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr auto; gap: 0.75rem; align-items: flex-end;">
+            <div>
+              <label class="form-label" style="font-size: 0.75rem; margin-bottom: 0.2rem;" for="inline-cb-notes">Notes / Customer Interest:</label>
+              <input type="text" class="form-input" id="inline-cb-notes" placeholder="e.g. Follow-up on patio door quote" style="font-size: 0.85rem; padding: 0.35rem 0.5rem;">
+            </div>
+            <button type="button" class="btn-primary" id="btn-inline-add-cb" style="font-size: 0.85rem; padding: 0.4rem 1rem; background: var(--success); border-color: var(--success);">+ Add Callback</button>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap;">
+          <button class="btn-secondary cb-filter-btn active" data-filter="all" style="font-size: 0.8rem; padding: 0.3rem 0.75rem;">All</button>
+          <button class="btn-secondary cb-filter-btn" data-filter="due" style="font-size: 0.8rem; padding: 0.3rem 0.75rem; color: #dc2626; font-weight: 700;">Due / Overdue</button>
+          <button class="btn-secondary cb-filter-btn" data-filter="pending" style="font-size: 0.8rem; padding: 0.3rem 0.75rem; color: #0284c7;">Upcoming</button>
+          <button class="btn-secondary cb-filter-btn" data-filter="completed" style="font-size: 0.8rem; padding: 0.3rem 0.75rem; color: #16a34a;">Completed</button>
+        </div>
+
+        <div id="callbacks-empty-state" style="display: none; text-align: center; padding: 2rem; color: #94a3b8;">
+          No callbacks found. Click <strong>+ Add Callback Reminder</strong> to schedule one!
+        </div>
+
+        <div id="callbacks-cards-container">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+    </main>
+
+    <!-- TAB 2: Timesheet History -->
+    <main class="tab-content" id="tab-timesheet">
+      <div class="card">
+        <div class="card-title">
+          <span>Timesheet History</span>
+          <div style="display: flex; gap: 0.5rem;">
+            <button class="btn-secondary" id="btn-export-csv" style="font-size: 0.85rem;">📥 Export CSV</button>
+          </div>
+        </div>
+
+        <table class="timesheet-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Shift Details (12h Toronto)</th>
+              <th>Phone Time</th>
+              <th>Off-Phone Time</th>
+              <th>Total Hours</th>
+              <th>Appts</th>
+              <th>Notes / Action</th>
+            </tr>
+          </thead>
+          <tbody id="timesheet-tbody">
+            <!-- Populated dynamically -->
+          </tbody>
+        </table>
+      </div>
+    </main>
+
+    <!-- TAB 3: Telus Log Extrapolator -->
+    <main class="tab-content" id="tab-telus">
+      <div class="card">
+        <div class="card-title">
+          <span>📞 Telus Phone Log Extrapolator</span>
+          <span style="font-size: 0.8rem; font-weight: normal; color: #64748b;">Copy from Telus & Paste Here</span>
+        </div>
+        <p style="font-size: 0.85rem; color: #475569; margin-bottom: 1rem;">
+          If Sabrina's Telus calling app does not have an export button, simply highlight/copy the call log screen from Telus, paste the text into the box below, and click <strong>Extract Phone Calls</strong>. The app will extrapolate each call's duration and total talk time.
+        </p>
+
+        <div class="form-group">
+          <label class="form-label" for="telus-raw-input">Paste Raw Telus Log / Screen Text:</label>
+          <textarea class="form-textarea" id="telus-raw-input" rows="7" placeholder="Paste Telus call history here... Example:
+Inbound Call  (416) 555-0192  00:04:12  10:14 AM
+Outbound Call (905) 555-0144  00:08:45  11:30 AM
+Outbound Call (647) 555-9821  00:01:20  01:15 PM"></textarea>
+        </div>
+
+        <div style="display: flex; gap: 0.75rem; margin-bottom: 1.5rem;">
+          <button class="btn-primary" id="btn-parse-telus">🔍 Extract Phone Calls</button>
+          <button class="btn-secondary" id="btn-sample-telus">Load Sample Telus Text</button>
+          <button class="btn-secondary" id="btn-clear-telus">Clear</button>
+        </div>
+
+        <!-- Parser Results -->
+        <div id="telus-results-container" style="display: none;">
+          <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <h4 style="color: #166534; font-weight: 700;">Extraction Summary</h4>
+              <p style="font-size: 0.85rem; color: #15803d;" id="telus-summary-text">Found 3 calls totaling 14m 17s talk time.</p>
+            </div>
+            <button class="btn-primary" id="btn-apply-telus-today" style="background: #16a34a;">✅ Apply Phone Time to Today</button>
+          </div>
+
+          <table class="timesheet-table">
+            <thead>
+              <tr>
+                <th>Type</th>
+                <th>Party / Number</th>
+                <th>Time (12h)</th>
+                <th>Duration</th>
+                <th>Seconds</th>
+              </tr>
+            </thead>
+            <tbody id="telus-parsed-tbody">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+
+    <!-- TAB 4: Invoice Generator for Optima Windows and Doors -->
+    <main class="tab-content" id="tab-invoice">
+      <div class="card no-print" style="margin-bottom: 1.5rem;">
+        <div class="card-title">
+          <span>📄 Invoice Configuration</span>
+          <div class="invoice-actions" style="display: flex; gap: 0.5rem;">
+            <button type="button" class="btn-secondary" id="btn-toggle-invoice-preview">👁️ Hide Preview</button>
+            <button type="button" class="btn-primary" id="btn-print-invoice">🖨️ Print / Save as PDF</button>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem;">
+          <div class="form-group">
+            <label class="form-label" for="inv-start-date">Billing Period Start:</label>
+            <input type="date" class="form-input" id="inv-start-date">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="inv-end-date">Billing Period End:</label>
+            <input type="date" class="form-input" id="inv-end-date">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="inv-rate">Hourly Rate ($ CAD):</label>
+            <input type="number" class="form-input" id="inv-rate" value="25.00" step="0.50">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="inv-num">Invoice Number:</label>
+            <input type="text" class="form-input" id="inv-num" value="INV-2026-001">
+          </div>
+        </div>
+
+        <div style="margin-top: 1rem; font-size: 0.85rem; color: #64748b;">
+          💡 <em>Tip: All text, line items, rates, and notes on this invoice are directly editable! Click on any text below before printing or saving to PDF.</em>
+        </div>
+      </div>
+
+      <!-- Printable & Editable Invoice Sheet -->
+      <div class="invoice-sheet pdf-sheet" id="invoice-sheet">
+        <div class="no-print" style="display: flex; justify-content: space-between; align-items: center; background: var(--code-bg, #f1f5f9); padding: 0.6rem 1rem; border-radius: 8px; margin-bottom: 1.5rem; border: 1px dashed var(--border, #cbd5e1);">
+          <span style="font-size: 0.85rem; font-weight: 700; color: var(--primary, #2563eb);">
+            ✏️ Live Editable Invoice Preview &mdash; Click directly on any name, date, hours, or note to edit before saving
+          </span>
+          <button type="button" class="btn-secondary" id="btn-close-invoice-sheet" style="font-size: 0.75rem; padding: 0.25rem 0.6rem; cursor: pointer;">
+            ✕ Close Preview
+          </button>
+        </div>
+
+        <div class="invoice-header-grid">
+          <div>
+            <h2 style="font-size: 1.6rem; font-weight: 800; color: #1e293b;" id="inv-contractor-name" contenteditable="true">Sabrina</h2>
+            <p style="font-size: 0.9rem; color: #64748b;" contenteditable="true">Appointment Booking &amp; Sales Coordinator</p>
+            <p style="font-size: 0.85rem; color: #64748b; margin-top: 0.5rem;" contenteditable="true">Toronto, ON • Canada</p>
+          </div>
+
+          <div style="text-align: right;">
+            <h2 style="font-size: 1.8rem; font-weight: 800; color: #2563eb; letter-spacing: -0.03em;">INVOICE</h2>
+            <p style="font-size: 0.9rem; font-weight: 600;" id="inv-display-number" contenteditable="true">Invoice #: INV-2026-001</p>
+            <p style="font-size: 0.85rem; color: #64748b;" id="inv-display-date" contenteditable="true">Date: September 11, 2026</p>
+            <p style="font-size: 0.85rem; color: #64748b;" id="inv-display-period" contenteditable="true">Period: Current Week</p>
+          </div>
+        </div>
+
+        <div class="invoice-bill-to" style="margin-bottom: 2rem;">
+          <span style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: #64748b; letter-spacing: 0.05em;">Billed To:</span>
+          <h3 style="font-size: 1.15rem; font-weight: 800; color: #0f172a; margin-top: 0.2rem;" id="inv-client-name" contenteditable="true">Optima Windows and Doors</h3>
+          <p style="font-size: 0.85rem; color: #475569;" contenteditable="true">Sales &amp; Customer Appointment Services</p>
+        </div>
+
+        <!-- Itemized Table -->
+        <table class="timesheet-table" style="margin-bottom: 2rem;">
+          <thead>
+            <tr>
+              <th style="width: 35%;">Date</th>
+              <th style="width: 35%;">Total Hours Per Day (Rounded to 15m)</th>
+              <th style="width: 15%; text-align: right;">Rate</th>
+              <th style="width: 15%; text-align: right;">Total</th>
+            </tr>
+          </thead>
+          <tbody id="invoice-tbody">
+            <!-- Dynamically populated -->
+          </tbody>
+        </table>
+
+        <!-- Summary & Totals -->
+        <div class="invoice-summary-box">
+          <div class="summary-card">
+            <div class="summary-row">
+              <span>Total Billable Hours (Rounded to 15m):</span>
+              <strong id="inv-total-formatted" contenteditable="true">0h 00m</strong>
+            </div>
+            <div class="summary-row">
+              <span>Billable Hours (Decimal):</span>
+              <span id="inv-total-decimal" contenteditable="true">0.00 hrs</span>
+            </div>
+            <div class="summary-row">
+              <span>Hourly Rate:</span>
+              <span id="inv-hourly-rate" contenteditable="true">$25.00 / hr</span>
+            </div>
+            <div class="summary-row total-row">
+              <span>Total Due:</span>
+              <span id="inv-grand-total" style="color: #2563eb;" contenteditable="true">$0.00 CAD</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top: 3rem; border-top: 1px solid #e2e8f0; padding-top: 1.5rem; font-size: 0.85rem; color: #64748b; text-align: center;" contenteditable="true">
+          Thank you for your business! Please remit payment via Interac e-Transfer or direct deposit.
+        </div>
+      </div>
+    </main>
+
+    <!-- TAB 5: Settings & Backup -->
+    <main class="tab-content" id="tab-settings">
+      <div class="card">
+        <div class="card-title">Profile & Client Settings</div>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+          <div class="form-group">
+            <label class="form-label" for="setting-name">Your Name:</label>
+            <input type="text" class="form-input" id="setting-name" value="Sabrina">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="setting-client">Client / Employer Name:</label>
+            <input type="text" class="form-input" id="setting-client" value="Optima Windows and Doors">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="setting-rate">Default Hourly Rate ($ CAD):</label>
+            <input type="number" class="form-input" id="setting-rate" value="25.00" step="0.50">
+          </div>
+        </div>
+
+        <button class="btn-primary" id="btn-save-settings">Save Settings</button>
+      </div>
+
+      <div class="card" id="card-sales-reps">
+        <div class="card-title" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+          <span>👥 Sales Representatives & Estimators</span>
+          <button class="btn-secondary" id="btn-export-reps-json" style="font-size: 0.75rem; padding: 0.35rem 0.75rem;">💾 Export sales_reps.json</button>
+        </div>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
+          These salespeople populate the appointment booking dropdown across the app. Add, edit, or remove team members here.
+        </p>
+
+        <!-- Inline Add Rep Form -->
+        <div style="display: flex; gap: 0.5rem; margin-bottom: 1.25rem; flex-wrap: wrap;">
+          <input type="text" class="form-input" id="input-new-rep-name" placeholder="Enter representative name & role (e.g. Sarah Connor - Estimator)" style="flex: 1; min-width: 260px;">
+          <button class="btn-primary" id="btn-add-rep" style="white-space: nowrap;">+ Add Sales Person</button>
+        </div>
+
+        <!-- Reps List -->
+        <div id="sales-reps-list" style="display: flex; flex-direction: column; gap: 0.5rem;">
+          <!-- Populated dynamically by app.js -->
+        </div>
+      </div>
+
+      <!-- 5-Minute Auto-Save Snapshots & Undo Recovery -->
+      <div class="card" id="card-snapshot-history">
+        <div class="card-title" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+          <span>🕒 5-Minute Auto-Save History &amp; Undo Recovery</span>
+          <div style="display: flex; gap: 0.5rem;">
+            <button class="btn-secondary" id="btn-undo-action" style="font-size: 0.78rem; padding: 0.35rem 0.75rem; border-color: #f59e0b; color: #f59e0b;">
+              ↩️ Undo Last Action
+            </button>
+            <button class="btn-secondary" id="btn-take-snapshot" style="font-size: 0.78rem; padding: 0.35rem 0.75rem;">
+              📸 Snapshot Now
+            </button>
+          </div>
+        </div>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
+          Your work is automatically saved every 5 minutes while working. If anything is ever accidentally deleted or overwritten, you can undo immediately or restore any snapshot from the past 2 hours.
+        </p>
+        <div id="history-snapshots-list" style="display: flex; flex-direction: column; gap: 0.5rem;">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+
+      <!-- Software Updates & GitHub Synchronization -->
+      <div class="card" id="card-github-updates">
+        <div class="card-title" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+          <div style="display: flex; align-items: center; gap: 0.6rem;">
+            <span>🔄 Software Updates &amp; GitHub Sync</span>
+            <span class="version-badge" id="settings-version-badge">v1.5.0</span>
+          </div>
+          <button class="btn-primary" id="btn-check-updates" style="font-size: 0.8rem; padding: 0.4rem 0.9rem;">
+            🔄 Check for Updates / Pull Latest Code
+          </button>
+        </div>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
+          Push new features and enhancements directly from GitHub. Sabrina can sign in using her Gmail account to pull updates on demand without touching code.
+        </p>
+
+        <div style="background: var(--code-bg, #0f172a); border: 1px solid var(--border, #334155); border-radius: 6px; padding: 0.85rem; font-size: 0.82rem; line-height: 1.6; color: var(--text, #f8fafc);">
+          <div style="font-weight: 700; color: #38bdf8; margin-bottom: 0.4rem;">🛡️ Data Safety Guarantee:</div>
+          <div>All client records, shift hours, and callbacks are preserved in your local <code>data\</code> folder and are <strong>strictly ignored by Git</strong>. Pulling code updates will never alter or overwrite your existing work logs.</div>
+          <div style="margin-top: 0.5rem; font-size: 0.78rem; color: var(--text-muted);">
+            Build: <strong id="settings-build-id">2026.09.11-rev2</strong> &bull; Release Date: <span id="settings-release-date">2026-09-11</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Data Backup & Safety</div>
+        <p style="font-size: 0.85rem; color: #475569; margin-bottom: 1rem;">
+          All work hours are automatically saved on this computer in local storage. You can also export backups to ensure your data is always safe.
+        </p>
+
+        <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+          <button class="btn-secondary" id="btn-backup-json">💾 Backup All Data (JSON)</button>
+          <label class="btn-secondary" style="cursor: pointer;">
+            📂 Restore from Backup
+            <input type="file" id="input-restore-json" accept=".json" style="display: none;">
+          </label>
+          <button class="btn-secondary" id="btn-load-sample-shifts">✨ Load Sample Week (for Testing)</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🖥️ Easy Daily Launch Setup</div>
+        <p style="font-size: 0.85rem; color: #475569; margin-bottom: 0.5rem;">
+          To make it effortless for Sabrina every morning:
+        </p>
+        <ol style="margin-left: 1.5rem; font-size: 0.85rem; color: #475569; line-height: 1.8;">
+          <li>A desktop shortcut file named <code>Launch Sabrina Tracker.bat</code> has been prepared in this folder.</li>
+          <li>Right-click it and select <strong>Send to → Desktop (create shortcut)</strong>.</li>
+          <li>Every day when she starts work, she just double-clicks the shortcut on her desktop!</li>
+          <li>It opens directly in app mode without URL bars or browser clutter.</li>
+        </ol>
+      </div>
+    </main>
+
+  </div>
+
+  <!-- Manual Shift Modal (for adding missed hours) -->
+  <div id="manual-shift-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-card">
+      <h3 class="modal-title">Add Past / Missed Shift</h3>
+      
+      <div class="form-group">
+        <label class="form-label" for="manual-date">Date:</label>
+        <input type="date" class="form-input" id="manual-date">
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+        <div class="form-group">
+          <label class="form-label" for="manual-start">Start Time (12h format):</label>
+          <input type="time" class="form-input" id="manual-start" value="09:00">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="manual-end">End Time (12h format):</label>
+          <input type="time" class="form-input" id="manual-end" value="15:00">
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+        <div class="form-group">
+          <label class="form-label" for="manual-phone-mins">Estimated Phone Time (mins):</label>
+          <input type="number" class="form-input" id="manual-phone-mins" value="120">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="manual-appts">Appts Booked:</label>
+          <input type="number" class="form-input" id="manual-appts" value="0">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="manual-notes">Shift Notes / Duties:</label>
+        <input type="text" class="form-input" id="manual-notes" placeholder="e.g. Split shift morning booking calls">
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.25rem;">
+        <button class="btn-secondary" id="btn-cancel-manual">Cancel</button>
+        <button class="btn-primary" id="btn-save-manual">Save Shift</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Callback Modal (Streamlined for Name & Phone) -->
+  <div id="add-cb-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-card">
+      <h3 class="modal-title">+ Add Callback Reminder</h3>
+      
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+        <div class="form-group">
+          <label class="form-label" for="cb-name">Contact Name:</label>
+          <input type="text" class="form-input" id="cb-name" placeholder="e.g. John Smith">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="cb-phone">Phone Number:</label>
+          <input type="text" class="form-input" id="cb-phone" placeholder="e.g. 416-555-0199">
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+        <div class="form-group">
+          <label class="form-label" for="cb-date">Date:</label>
+          <input type="date" class="form-input" id="cb-date">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="cb-time">Time (e.g. 02:30 PM):</label>
+          <input type="text" class="form-input" id="cb-time" placeholder="02:30 PM">
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 0.5rem; margin-bottom: 0.75rem;">
+        <button type="button" class="btn-secondary" id="btn-cb-quick-today" style="font-size: 0.75rem; padding: 0.25rem 0.5rem;">Today</button>
+        <button type="button" class="btn-secondary" id="btn-cb-quick-tomorrow" style="font-size: 0.75rem; padding: 0.25rem 0.5rem;">Tomorrow</button>
+        <button type="button" class="btn-secondary" id="btn-cb-quick-15m" style="font-size: 0.75rem; padding: 0.25rem 0.5rem;">+15m</button>
+        <button type="button" class="btn-secondary" id="btn-cb-quick-1h" style="font-size: 0.75rem; padding: 0.25rem 0.5rem;">+1 Hour</button>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="cb-notes">Notes / Customer Interest:</label>
+        <textarea class="form-input" id="cb-notes" rows="2" placeholder="e.g. Interested in quote for 5 replacement awning windows"></textarea>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1rem;">
+        <button type="button" class="btn-secondary" id="btn-cancel-cb">Cancel</button>
+        <button type="button" class="btn-primary" id="btn-save-cb">Save Callback</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Appointment Booking Modal (Triggered by + Button) -->
+  <div id="quick-appt-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 style="font-size: 1.15rem; font-weight: 800; color: var(--success); margin: 0;">📅 Book Appointment</h3>
+        <button type="button" id="btn-close-quick-appt" class="modal-close-btn">&times;</button>
+      </div>
+
+      <!-- Customer Name & Phone -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem;">
+        <div>
+          <label class="form-label" style="font-size: 0.8rem; margin-bottom: 0.2rem;" for="quick-appt-name">Customer Name:</label>
+          <input type="text" class="form-input" id="quick-appt-name" placeholder="e.g. David Miller">
+        </div>
+        <div>
+          <label class="form-label" style="font-size: 0.8rem; margin-bottom: 0.2rem;" for="quick-appt-phone">Phone Number:</label>
+          <input type="text" class="form-input" id="quick-appt-phone" placeholder="e.g. 416-555-0188" style="color: var(--primary); font-weight: 700;">
+        </div>
+      </div>
+
+      <!-- Appointment Date & Time -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem;">
+        <div>
+          <label class="form-label" style="font-size: 0.8rem; margin-bottom: 0.2rem;" for="quick-appt-date">Appointment Date:</label>
+          <input type="date" class="form-input" id="quick-appt-date">
+        </div>
+        <div>
+          <label class="form-label" style="font-size: 0.8rem; margin-bottom: 0.2rem;" for="quick-appt-time">Appointment Time:</label>
+          <input type="text" class="form-input" id="quick-appt-time" value="10:00 AM" style="color: var(--success); font-weight: 700;">
+        </div>
+      </div>
+
+      <!-- Assigned Sales Rep -->
+      <div class="form-group" style="margin-bottom: 0.75rem;">
+        <label class="form-label" style="font-size: 0.8rem; margin-bottom: 0.2rem;" for="quick-appt-rep">Assigned Sales Representative:</label>
+        <select class="form-input" id="quick-appt-rep">
+          <option value="David Miller (Sales Rep)" selected>David Miller (Sales Rep)</option>
+          <option value="Marco Rossi (Senior Rep)">Marco Rossi (Senior Rep)</option>
+          <option value="Alex Thompson (In-Home Specialist)">Alex Thompson (In-Home Specialist)</option>
+          <option value="John Kelly (Consultant)">John Kelly (Consultant)</option>
+          <option value="Sabrina (Lead Coordinator)">Sabrina (Lead Coordinator)</option>
+        </select>
+      </div>
+
+      <!-- Callback Reminder Box -->
+      <div class="appt-reminder-box" style="background: var(--code-bg); border: 1px solid var(--border); border-radius: 6px; padding: 0.75rem; margin-bottom: 1rem;">
+        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-size: 0.9rem; font-weight: 700; color: var(--warning); margin-bottom: 0.5rem;">
+          <input type="checkbox" id="quick-appt-cb-check" style="width: 16px; height: 16px;" checked>
+          Schedule Callback Reminder?
+        </label>
+        <div id="quick-appt-cb-time-box" style="display: block;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.4rem;">
+            <div>
+              <label class="form-label" style="font-size: 0.75rem; margin-bottom: 0.2rem;" for="quick-appt-cb-date">Callback Date:</label>
+              <input type="date" class="form-input" id="quick-appt-cb-date" style="font-size: 0.85rem; padding: 0.35rem 0.5rem;">
+            </div>
+            <div>
+              <label class="form-label" style="font-size: 0.75rem; margin-bottom: 0.2rem;" for="quick-appt-cb-time">Callback Time:</label>
+              <input type="text" class="form-input" id="quick-appt-cb-time" placeholder="e.g. 03:30 PM" style="font-size: 0.85rem; padding: 0.35rem 0.5rem; font-weight: 700; color: var(--warning);">
+            </div>
+          </div>
+          <!-- Steppers -->
+          <div style="display: flex; flex-direction: column; gap: 0.25rem; align-items: flex-end; margin-top: 0.25rem;">
+            <div style="display: flex; gap: 0.2rem; align-items: center;">
+              <span style="font-size: 0.7rem; color: var(--text-muted);">Subtract:</span>
+              <button type="button" class="stepper-chip" data-target="quick-appt-cb-time" data-delta="-60">-1h</button>
+              <button type="button" class="stepper-chip" data-target="quick-appt-cb-time" data-delta="-30">-30m</button>
+              <button type="button" class="stepper-chip" data-target="quick-appt-cb-time" data-delta="-15">-15m</button>
+              <button type="button" class="stepper-chip" data-target="quick-appt-cb-time" data-delta="-10">-10m</button>
+              <button type="button" class="stepper-chip" data-target="quick-appt-cb-time" data-delta="-5">-5m</button>
+            </div>
+            <div style="display: flex; gap: 0.2rem; align-items: center;">
+              <span style="font-size: 0.7rem; color: var(--text-muted);">Add:</span>
+              <button type="button" class="stepper-chip" data-target="quick-appt-cb-time" data-delta="5">+5m</button>
+              <button type="button" class="stepper-chip" data-target="quick-appt-cb-time" data-delta="10">+10m</button>
+              <button type="button" class="stepper-chip" data-target="quick-appt-cb-time" data-delta="15">+15m</button>
+              <button type="button" class="stepper-chip" data-target="quick-appt-cb-time" data-delta="30">+30m</button>
+              <button type="button" class="stepper-chip" data-target="quick-appt-cb-time" data-delta="60">+1h</button>
+              <button type="button" class="stepper-chip" id="btn-quick-cb-today">Today</button>
+              <button type="button" class="stepper-chip" id="btn-quick-cb-tomorrow">Tom</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; margin-top: 1.25rem;">
+        <button type="button" class="btn-secondary" id="btn-quick-appt-skip" style="font-size: 0.8rem; padding: 0.4rem 0.75rem;">Skip Details (+1 Only)</button>
+        <div style="display: flex; gap: 0.5rem;">
+          <button type="button" class="btn-secondary" id="btn-quick-appt-cancel">Cancel</button>
+          <button type="button" class="btn-primary" id="btn-quick-appt-save" style="background: var(--success); border-color: var(--success);">✓ Book &amp; Log Appt</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Manual Call / Lead Modal -->
+  <div id="add-call-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-card">
+      <h3 class="modal-title">+ Log Call / Lead</h3>
+
+      <div class="form-group">
+        <label class="form-label" for="manual-call-name">Customer Name:</label>
+        <input type="text" class="form-input" id="manual-call-name" placeholder="e.g. Mary Watson">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="manual-call-phone">Phone Number:</label>
+        <input type="text" class="form-input" id="manual-call-phone" placeholder="e.g. 905-555-0142">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="manual-call-type">Call / Activity Type:</label>
+        <select class="form-input" id="manual-call-type">
+          <option value="Inbound Call">Inbound Call</option>
+          <option value="Outbound Call">Outbound Call</option>
+          <option value="Appointment Booked">Appointment Booked</option>
+          <option value="Text / SMS Follow-up">Text / SMS Follow-up</option>
+          <option value="General Inquiry">General Inquiry</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="manual-call-outcome">Outcome / Customer Interest:</label>
+        <input type="text" class="form-input" id="manual-call-outcome" placeholder="e.g. Requested quote for 3 basement slider windows">
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1rem;">
+        <button type="button" class="btn-secondary" id="btn-cancel-manual-call">Cancel</button>
+        <button type="button" class="btn-primary" id="btn-save-manual-call">Save Call Record</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Non-blocking floating toast notifications container -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <script src="data/shifts_data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

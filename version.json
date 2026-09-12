@@ -1,0 +1,6 @@
+{
+  "version": "1.5.0",
+  "build": "2026.09.11-rev2",
+  "releaseDate": "2026-09-11",
+  "notes": "Billable invoice 15m rounding, 5-minute rolling auto-save, undo recovery, GitHub update sync"
+}

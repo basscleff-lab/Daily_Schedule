@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sabrina Transport Bar | Optima Windows & Doors</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+
+  <div class="transport-widget">
+    
+    <!-- Top Status Strip -->
+    <div class="top-strip">
+      <div class="status-cluster" id="status-cluster">
+        <div class="led-indicator"></div>
+        <div class="status-label" id="status-label">OFFLINE</div>
+        <div style="font-size: 0.7rem; color: #64748b;" id="toronto-time-clock">12:00 PM</div>
+      </div>
+
+      <div class="top-metrics">
+        <!-- Quick Appt Counter -->
+        <div class="appt-box" title="Appointments Booked for Optima Windows & Doors Today">
+          <span style="font-size: 0.65rem; color: #94a3b8; font-weight: 700;">APPT:</span>
+          <span style="font-weight: 800; color: #22c55e;" id="popup-appt-count">0</span>
+          <button class="appt-btn" id="btn-popup-appt-plus" title="Count 1 more booked appointment">+</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Middle DAW Controls & Digital Readouts -->
+    <div class="transport-middle">
+      
+      <div class="transport-buttons">
+        <button class="btn-daw btn-rec" id="btn-mini-rec" title="Clock In / Start Shift">
+          <span>●</span>
+          <span id="btn-rec-label">REC</span>
+        </button>
+
+        <button class="btn-daw btn-pause" id="btn-mini-pause" disabled title="Pause Shift (Lunch / Break)">
+          <span>⏸</span>
+          <span>PAUSE</span>
+        </button>
+
+        <button class="btn-daw btn-stop" id="btn-mini-stop" disabled title="Clock Out / End Shift">
+          <span>⏹</span>
+          <span>STOP</span>
+        </button>
+      </div>
+
+      <!-- Luminous LED Digits -->
+      <div class="readout-box">
+        <div class="readout-cell">
+          <span class="readout-tag">Session</span>
+          <div class="readout-digits" id="mini-session-digits">00:00:00</div>
+        </div>
+        <div style="width: 1px; height: 26px; background: #1e293b;"></div>
+        <div class="readout-cell">
+          <span class="readout-tag">Today Total</span>
+          <div class="readout-digits digits-total" id="mini-today-digits">0h 00m</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Bottom Quick Activity Selector -->
+    <div class="activity-strip" id="popup-activity-group">
+      <button class="pill-btn" data-act="inbound_call" title="Inbound Customer Call">📞 Inbound</button>
+      <button class="pill-btn" data-act="outbound_call" title="Outbound Booking Call">📱 Outbound</button>
+      <button class="pill-btn" data-act="text_sms" title="Text / SMS Follow-up">💬 Text SMS</button>
+      <button class="pill-btn" data-act="email_in" title="Email Work">✉️ Email</button>
+      <button class="pill-btn active" data-act="off_phone_work" title="Off-Phone Admin / Booking Prep">📋 Admin Work</button>
+    </div>
+
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+# Sabrina Work Hub - Data Protection & Git Ignore Rules
+# NEVER commit or overwrite actual user work data
+
+# Live User Data Files (Crucial - keep local to each user's PC)
+data/*.json
+!data/sales_reps.json.default
+data/shifts_data.js
+data/backups/
+data/history/
+
+# System / Scratch files
+scratch/
+*.tmp
+*.log
+.tempmediaStorage/
+test_shot.png
