@@ -185,6 +185,9 @@ if ($script:state.Status -eq "OFFLINE") {
                     <!-- Advanced View Button -->
                     <Button Name="BtnAdvanced" Content="Advanced" Background="#1E3A8A" Foreground="#93C5FD" FontWeight="Bold" FontSize="10" Padding="6,2" BorderThickness="1" BorderBrush="#2563EB" Margin="0,0,5,0" Cursor="Hand" ToolTip="Open Full Invoices &amp; Timesheets"/>
 
+                    <!-- In-App GitHub Update Button -->
+                    <Button Name="BtnUpdate" Content="&#x21BB; Update" Background="#0F766E" Foreground="#99F6E4" FontWeight="Bold" FontSize="10" Padding="5,2" BorderThickness="1" BorderBrush="#14B8A6" Margin="0,0,5,0" Cursor="Hand" ToolTip="Click to check and apply updates directly from GitHub"/>
+
                     <!-- Minimize and Close -->
                     <Button Name="BtnMin" Content="&#x2014;" Background="Transparent" Foreground="#94A3B8" FontWeight="Bold" FontSize="11" Width="18" Height="18" BorderThickness="0" Margin="0,0,2,0" Cursor="Hand"/>
                     <Button Name="BtnClose" Content="&#x2715;" Background="Transparent" Foreground="#94A3B8" FontWeight="Bold" FontSize="11" Width="18" Height="18" BorderThickness="0" Cursor="Hand"/>
@@ -267,6 +270,7 @@ $TxtApptLabel    = $window.FindName("TxtApptLabel")
 $TxtAppts        = $window.FindName("TxtAppts")
 $BtnApptPlus     = $window.FindName("BtnApptPlus")
 $BtnAdvanced     = $window.FindName("BtnAdvanced")
+$BtnUpdate       = $window.FindName("BtnUpdate")
 $BtnMin          = $window.FindName("BtnMin")
 $BtnClose        = $window.FindName("BtnClose")
 $BtnRec          = $window.FindName("BtnRec")
@@ -322,6 +326,95 @@ $BtnAdvanced.Add_Click({
     $indexPath = Join-Path $PSScriptRoot "index.html"
     Start-Process "file:///$indexPath"
 })
+
+# In-App GitHub Direct Updater (Zero Git Required)
+function Update-AppFromGitHub {
+    try {
+        if ($BtnUpdate) {
+            $BtnUpdate.IsEnabled = $false
+            $BtnUpdate.Content = "Checking..."
+        }
+
+        $versionUrl = "https://raw.githubusercontent.com/basscleff-lab/Daily_Schedule/main/version.json?t=" + [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
+        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+
+        $remoteJson = $null
+        try {
+            $remoteJson = (Invoke-RestMethod -Uri $versionUrl -UseBasicParsing)
+        } catch {}
+
+        $currentVer = $script:appVersion
+        $remoteVer = if ($remoteJson -and $remoteJson.version) { $remoteJson.version } else { "latest" }
+
+        $msg = "Would you like to check GitHub and install the latest updates now?`n`nAll your shift records and client data in data\ will be safely preserved."
+        if ($remoteJson -and $remoteJson.version) {
+            if ($remoteJson.version -eq $currentVer -and $remoteJson.build -eq $script:appBuild) {
+                $msg = "You are currently running the latest release (v$currentVer).`n`nWould you like to reinstall/refresh from GitHub anyway?`n`nAll your work logs in data\ will remain 100% safe."
+            } else {
+                $msg = "🚀 New Update Available: v$($remoteJson.version) (Current: v$currentVer)`n`nRelease Notes: $($remoteJson.notes)`n`nWould you like to download and install this update now?"
+            }
+        }
+
+        $confirm = [System.Windows.MessageBox]::Show($msg, "In-App Software Update", [System.Windows.MessageBoxButton]::YesNo, [System.Windows.MessageBoxImage]::Question)
+        if ($confirm -ne [System.Windows.MessageBoxResult]::Yes) {
+            if ($BtnUpdate) {
+                $BtnUpdate.IsEnabled = $true
+                $BtnUpdate.Content = [char]0x21BB + " Update"
+            }
+            return
+        }
+
+        if ($BtnUpdate) {
+            $BtnUpdate.Content = "Updating..."
+        }
+
+        # 1. Take safety snapshot of local data before updating
+        Save-5MinSnapshot
+
+        # 2. Download latest release zip from GitHub
+        $repoZip = "https://github.com/basscleff-lab/Daily_Schedule/archive/refs/heads/main.zip"
+        $tempZip = Join-Path $env:TEMP "daily_sched_inapp_update.zip"
+        $tempExt = Join-Path $env:TEMP "daily_sched_inapp_ext"
+        Remove-Item $tempZip, $tempExt -Recurse -Force -ErrorAction SilentlyContinue
+
+        Invoke-WebRequest -Uri $repoZip -OutFile $tempZip -UseBasicParsing
+        Expand-Archive -Path $tempZip -DestinationPath $tempExt -Force
+
+        $srcDir = Join-Path $tempExt "Daily_Schedule-main"
+        if (Test-Path $srcDir) {
+            # Copy only core application code files, NEVER touch data/
+            Get-ChildItem -Path $srcDir -File | ForEach-Object {
+                Copy-Item -Path $_.FullName -Destination $PSScriptRoot -Force
+            }
+
+            Remove-Item $tempZip, $tempExt -Recurse -Force -ErrorAction SilentlyContinue
+
+            [System.Windows.MessageBox]::Show("App updated successfully to version $($remoteVer)!`n`nAll your work logs and shift hours are 100% safe.`n`nThe toolbar will now reload with the new features.", "Update Complete", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information) | Out-Null
+
+            # Restart toolbar process cleanly
+            Start-Process powershell.exe -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$PSScriptRoot\floating_toolbar.ps1`""
+            [System.Windows.Application]::Current.Shutdown()
+        } else {
+            [System.Windows.MessageBox]::Show("Could not unpack GitHub update files.", "Update Error", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Warning) | Out-Null
+            if ($BtnUpdate) {
+                $BtnUpdate.IsEnabled = $true
+                $BtnUpdate.Content = [char]0x21BB + " Update"
+            }
+        }
+    } catch {
+        [System.Windows.MessageBox]::Show("Update failed: $($_.Exception.Message)", "Update Error", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Error) | Out-Null
+        if ($BtnUpdate) {
+            $BtnUpdate.IsEnabled = $true
+            $BtnUpdate.Content = [char]0x21BB + " Update"
+        }
+    }
+}
+
+if ($BtnUpdate) {
+    $BtnUpdate.Add_Click({
+        Update-AppFromGitHub
+    })
+}
 
 # Appointments Counter - Click either "+" button or entire APPT badge
 $BtnApptPlus.Add_Click({
