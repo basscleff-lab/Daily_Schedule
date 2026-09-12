@@ -1,6 +1,6 @@
 {
-  "version": "1.5.3",
-  "build": "2026.09.12-rev4",
+  "version": "1.5.4",
+  "build": "2026.09.12-rev5",
   "releaseDate": "2026-09-12",
-  "notes": "Fixed callback reminder modal buttons (time adjusters, delete, phone/sms copy, close [X] overlap) and quick appointment steppers."
+  "notes": "Fixed recurring callback audio ping by correctly persisting alerted status to disk and ensuring toast modal singleton."
 }

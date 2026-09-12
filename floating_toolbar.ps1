@@ -25,8 +25,8 @@ $script:historyDir = Join-Path $script:dataDir "history"
 if (!(Test-Path $script:historyDir)) { New-Item -ItemType Directory -Path $script:historyDir -Force | Out-Null }
 
 $script:versionFile = Join-Path $PSScriptRoot "version.json"
-$script:appVersion = "1.5.3"
-$script:appBuild = "2026.09.12-rev4"
+$script:appVersion = "1.5.4"
+$script:appBuild = "2026.09.12-rev5"
 if (Test-Path $script:versionFile) {
     try {
         $vData = Get-Content $script:versionFile -Raw | ConvertFrom-Json
@@ -820,6 +820,18 @@ function Complete-Callback($cbId) {
         if ($c.id -eq $cbId) {
             $c.status = "COMPLETED"
             $c.completedAt = Get-NowEpochMs
+            $c.alerted = $true
+            break
+        }
+    }
+    Save-CallbacksList $all
+}
+
+function Mark-CallbackAlerted($cbId) {
+    $all = Get-CallbacksList
+    foreach ($c in $all) {
+        if ($c.id -eq $cbId) {
+            $c.alerted = $true
             break
         }
     }
@@ -854,7 +866,12 @@ function Delete-Callback($cbId) {
     Save-CallbacksList $filtered
 }
 
+$script:activeToastWindow = $null
+
 function Show-CallbackToast($cb) {
+    if ($script:activeToastWindow -and $script:activeToastWindow.IsLoaded) {
+        return
+    }
     try {
         [System.Media.SystemSounds]::Exclamation.Play()
     } catch {}
@@ -985,6 +1002,10 @@ function Show-CallbackToast($cb) {
         $toastWin.Close()
     }.GetNewClosure())
 
+    $script:activeToastWindow = $toastWin
+    $toastWin.Add_Closed({
+        $script:activeToastWindow = $null
+    })
     $toastWin.Show()
 }
 
@@ -2533,11 +2554,10 @@ $timer.Add_Tick({
             $BtnActCallbacks.BorderBrush = $bc.ConvertFromString("#FBBF24")
         }
 
-        # Check for un-alerted due callbacks to trigger popup
+        # Check for un-alerted due callbacks to trigger popup (alerts only once per callback)
         foreach ($cb in $dueCbs) {
             if (!$cb.alerted) {
-                $cb.alerted = $true
-                Save-CallbacksList (Get-CallbacksList)
+                Mark-CallbackAlerted $cb.id
                 Show-CallbackToast $cb
                 break
             }
