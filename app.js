@@ -2581,6 +2581,15 @@ Outbound Call (905) 555-7711  00:05:00  05:30 PM`;
         if (todayReadout) todayReadout.textContent = formatHoursMinutes(todaySeconds);
       }
     }, 1000);
+
+    // Global Escape key listener to close all open modals
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        document.querySelectorAll('.modal-overlay').forEach(modal => {
+          modal.style.display = 'none';
+        });
+      }
+    });
   }
 
   document.addEventListener('DOMContentLoaded', init);

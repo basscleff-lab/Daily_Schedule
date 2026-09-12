@@ -1,6 +1,6 @@
 {
-  "version": "1.5.0",
-  "build": "2026.09.12-rev1",
+  "version": "1.5.1",
+  "build": "2026.09.12-rev2",
   "releaseDate": "2026-09-12",
-  "notes": "Direct in-app GitHub update button, zero-Git support, privacy sanitization, and 5-min snapshot undo recovery"
+  "notes": "Fixed callback reminder modal freeze bug: non-blocking display, draggable popups, explicit close button, and Escape key dismissal."
 }

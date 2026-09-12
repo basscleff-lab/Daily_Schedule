@@ -15,8 +15,8 @@ $script:historyDir = Join-Path $script:dataDir "history"
 if (!(Test-Path $script:historyDir)) { New-Item -ItemType Directory -Path $script:historyDir -Force | Out-Null }
 
 $script:versionFile = Join-Path $PSScriptRoot "version.json"
-$script:appVersion = "1.5.0"
-$script:appBuild = "2026.09.12-rev1"
+$script:appVersion = "1.5.1"
+$script:appBuild = "2026.09.12-rev2"
 if (Test-Path $script:versionFile) {
     try {
         $vData = Get-Content $script:versionFile -Raw | ConvertFrom-Json
@@ -850,9 +850,16 @@ function Show-CallbackToast($cb) {
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
-            <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,8">
-                <TextBlock Name="TxtToastHeader" Text="REMINDER: CALLBACK DUE NOW!" Foreground="#EF4444" FontWeight="Bold" FontSize="12"/>
-            </StackPanel>
+            <Grid Grid.Row="0" Margin="0,0,0,8" Cursor="SizeAll" Name="ToastHeaderGrid" Background="Transparent">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Name="TxtToastHeader" Text="REMINDER: CALLBACK DUE NOW!" Foreground="#EF4444" FontWeight="Bold" FontSize="12"/>
+                </StackPanel>
+                <Button Name="BtnToastClose" Grid.Column="1" Content="✕" Background="#334155" Foreground="White" FontWeight="Bold" FontSize="11" Width="22" Height="22" BorderThickness="0" Cursor="Hand"/>
+            </Grid>
 
             <StackPanel Grid.Row="1" Margin="0,0,0,8">
                 <TextBlock Name="TxtToastName" Foreground="#F8FAFC" FontWeight="Bold" FontSize="14" Margin="0,0,0,2"/>
@@ -883,6 +890,7 @@ function Show-CallbackToast($cb) {
     $name = $toastWin.FindName("TxtToastName")
     $phone = $toastWin.FindName("TxtToastPhone")
     $notes = $toastWin.FindName("TxtToastNotes")
+    $btnClose = $toastWin.FindName("BtnToastClose")
 
     if ($curTheme -eq "light") {
         $border.Background = $bc.ConvertFromString("#FFFFFF")
@@ -890,6 +898,10 @@ function Show-CallbackToast($cb) {
         $name.Foreground = $bc.ConvertFromString("#0F172A")
         $phone.Foreground = $bc.ConvertFromString("#0284C7")
         $notes.Foreground = $bc.ConvertFromString("#475569")
+        if ($btnClose) {
+            $btnClose.Background = $bc.ConvertFromString("#E2E8F0")
+            $btnClose.Foreground = $bc.ConvertFromString("#0F172A")
+        }
     } elseif ($curTheme -eq "highvis") {
         $border.Background = $bc.ConvertFromString("#000000")
         $border.BorderBrush = $bc.ConvertFromString("#FF0000")
@@ -897,6 +909,12 @@ function Show-CallbackToast($cb) {
         $name.Foreground = $bc.ConvertFromString("#FFFF00")
         $phone.Foreground = $bc.ConvertFromString("#00FFFF")
         $notes.Foreground = $bc.ConvertFromString("#FFFFFF")
+        if ($btnClose) {
+            $btnClose.Background = $bc.ConvertFromString("#000000")
+            $btnClose.Foreground = $bc.ConvertFromString("#FF0000")
+            $btnClose.BorderBrush = $bc.ConvertFromString("#FF0000")
+            $btnClose.BorderThickness = [System.Windows.Thickness]::new(1)
+        }
     }
 
     $toastWin.FindName("TxtToastName").Text = [string]$cb.contactName
@@ -906,10 +924,28 @@ function Show-CallbackToast($cb) {
     $currPhone = [string]$cb.phone
     $currId = [string]$cb.id
 
+    if ($border) {
+        $border.Add_MouseLeftButtonDown({
+            $toastWin.DragMove()
+        })
+    }
+
+    $toastWin.Add_KeyDown({
+        if ($_.Key -eq [System.Windows.Input.Key]::Escape) {
+            $toastWin.Close()
+        }
+    })
+
+    if ($btnClose) {
+        $btnClose.Add_Click({
+            $toastWin.Close()
+        })
+    }
+
     $toastWin.FindName("BtnToastCopy").Add_Click({
         [System.Windows.Clipboard]::SetText($currPhone)
-        Show-CallbackManager
         $toastWin.Close()
+        Show-CallbackManager
     }.GetNewClosure())
 
     $toastWin.FindName("BtnToastSnooze").Add_Click({
@@ -1447,8 +1483,21 @@ function Show-QuickApptModal([switch]$NoShow) {
         $apptWin.Close()
     })
 
+    $apptWinBorder = $apptWin.FindName("ApptModalBorder")
+    if ($apptWinBorder) {
+        $apptWinBorder.Add_MouseLeftButtonDown({
+            $apptWin.DragMove()
+        })
+    }
+
+    $apptWin.Add_KeyDown({
+        if ($_.Key -eq [System.Windows.Input.Key]::Escape) {
+            $apptWin.Close()
+        }
+    })
+
     if (!$NoShow) {
-        $apptWin.ShowDialog() | Out-Null
+        $apptWin.Show()
     }
     return $apptWin
 }
@@ -1679,7 +1728,7 @@ function Show-CallbackManager {
     [xml]$mgrXaml = @"
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Sabrina Callbacks and Leads"
+        Title="Callback Reminders"
         Width="720" Height="640"
         WindowStyle="None"
         AllowsTransparency="True"
@@ -1717,12 +1766,12 @@ function Show-CallbackManager {
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock Name="TxtMgrTitle" Text="Sabrina's Callback Reminders" Foreground="#F8FAFC" FontWeight="Bold" FontSize="14" Margin="0,0,10,0"/>
+                    <TextBlock Name="TxtMgrTitle" Text="Callback Reminders" Foreground="#F8FAFC" FontWeight="Bold" FontSize="14" Margin="0,0,10,0"/>
                     <TextBlock Name="TxtMgrStatus" Text="Ready" Foreground="#38BDF8" FontSize="11" VerticalAlignment="Center"/>
                 </StackPanel>
                 <StackPanel Grid.Column="1" Orientation="Horizontal">
                     <Button Name="BtnMgrCopyAllExcel" Content="Copy All for Excel" Background="#1E3A8A" Foreground="#93C5FD" FontWeight="Bold" FontSize="11" Padding="8,4" BorderThickness="1" BorderBrush="#2563EB" Margin="0,0,8,0" Cursor="Hand"/>
-                    <Button Name="BtnMgrClose" Content="X" Background="#334155" Foreground="White" FontWeight="Bold" FontSize="12" Width="24" Height="24" BorderThickness="0" Cursor="Hand"/>
+                    <Button Name="BtnMgrClose" Content="✕" Background="#334155" Foreground="White" FontWeight="Bold" FontSize="12" Width="24" Height="24" BorderThickness="0" Cursor="Hand"/>
                 </StackPanel>
             </Grid>
 
@@ -1830,7 +1879,15 @@ function Show-CallbackManager {
 
     $mgrWin = $script:cbManagerWindow
     $mgrHeader = $mgrWin.FindName("MgrHeaderBar")
-    $mgrHeader.Add_MouseLeftButtonDown({ $mgrWin.DragMove() })
+    if ($mgrHeader) { $mgrHeader.Add_MouseLeftButtonDown({ $mgrWin.DragMove() }) }
+    $mgrOuter = $mgrWin.FindName("MgrOuterBorder")
+    if ($mgrOuter) { $mgrOuter.Add_MouseLeftButtonDown({ $mgrWin.DragMove() }) }
+
+    $mgrWin.Add_KeyDown({
+        if ($_.Key -eq [System.Windows.Input.Key]::Escape) {
+            $mgrWin.Close()
+        }
+    })
 
     $txtStatus = $mgrWin.FindName("TxtMgrStatus")
     $tbName = $mgrWin.FindName("TbName")
