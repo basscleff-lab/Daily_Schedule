@@ -1,11 +1,10 @@
 @echo off
 setlocal enabledelayedexpansion
-title Sabrina Work Hub - PC Setup & Deployment Tool
+title Daily Work Hub - PC Setup & Deployment Tool
 color 0B
 
 echo ======================================================================
-echo           SABRINA WORK HUB - PC SETUP & DEPLOYMENT TOOL
-echo                  Client: Optima Windows and Doors
+echo           DAILY WORK HUB - PC SETUP & DEPLOYMENT TOOL
 echo ======================================================================
 echo.
 
@@ -113,7 +112,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -Command ^
     "$sc = $ws.CreateShortcut($shortcutPath);" ^
     "$sc.TargetPath = '%TARGET_DIR%\Launch_Floating_Toolbar.bat';" ^
     "$sc.WorkingDirectory = '%TARGET_DIR%';" ^
-    "$sc.Description = 'Sabrina Floating Work Tracker - Optima Windows and Doors';" ^
+    "$sc.Description = 'Daily Floating Work Tracker';" ^
     "$sc.IconLocation = 'shell32.dll,265';" ^
     "$sc.Save();" ^
     "$reportPath = Join-Path $desktop 'Sabrina Invoices & Reports.lnk';" ^

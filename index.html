@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Work Hub & Shift Tracker | Sabrina - Optima Windows and Doors</title>
+  <title>Daily Work Hub & Shift Tracker</title>
   <link rel="stylesheet" href="styles.css">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⏱️</text></svg>">
 </head>
@@ -16,10 +16,10 @@
       <div class="brand-section">
         <h1>
           <span>⏱️ Work Hub & Time Tracker</span>
-          <span class="badge">Optima Windows & Doors</span>
+          <span class="badge" id="header-client-badge">Work &amp; Time Tracker</span>
           <span class="version-badge" id="app-version-badge">v1.5.0</span>
         </h1>
-        <p class="brand-subtitle">Sabrina's Daily Appointment Booking & Time Log</p>
+        <p class="brand-subtitle">Daily Shift Tracking, Appointment Booking &amp; Billable Hours</p>
       </div>
 
       <div style="display: flex; align-items: center; gap: 1rem;">
@@ -129,7 +129,7 @@
         <div>
           <div class="stat-title">Appointments Booked Today</div>
           <div class="stat-number" id="stat-appts-count">0</div>
-          <small style="color: #64748b; font-size: 0.75rem;">Optima Windows & Doors</small>
+          <small style="color: #64748b; font-size: 0.75rem;" id="stat-client-label">Appointments</small>
         </div>
         <div class="appointment-stepper">
           <button class="stepper-btn" id="btn-appt-minus" title="Decrease count">-</button>
@@ -144,8 +144,8 @@
       <button class="tab-btn" data-tab="tab-daily-summary">📊 Daily Call Summary (PDF)</button>
       <button class="tab-btn" data-tab="tab-callbacks">📞 Callbacks &amp; Reminders</button>
       <button class="tab-btn" data-tab="tab-timesheet">📅 Timesheet History</button>
-      <button class="tab-btn" data-tab="tab-telus">📞 Telus Log Extrapolator</button>
-      <button class="tab-btn" data-tab="tab-invoice">📄 Invoice for Optima (PDF)</button>
+      <button class="tab-btn" data-tab="tab-telus">📞 Softphone Log Extrapolator</button>
+      <button class="tab-btn" data-tab="tab-invoice">📄 Invoice Preview &amp; PDF</button>
       <button class="tab-btn" data-tab="tab-settings">⚙️ Settings &amp; Backup</button>
     </nav>
 
@@ -173,7 +173,7 @@
           • <strong>Shift 1:</strong> Typically 9:00 AM – 3:00 PM (6 hours)<br>
           • <strong>Midday Break:</strong> Clock out or pause at 3:00 PM.<br>
           • <strong>Shift 2:</strong> Resume from 5:00 PM – 7:00 PM (2 hours).<br>
-          Both shifts will automatically merge into today's total billing hours for Optima Windows & Doors.
+          Both shifts will automatically merge into today's total billing hours.
         </p>
       </div>
     </main>
@@ -205,11 +205,11 @@
           <div style="display: grid; grid-template-columns: 1.2fr 1fr 1.2fr 0.8fr 1.5fr auto; gap: 0.5rem; align-items: flex-end;">
             <div>
               <label class="form-label" style="font-size: 0.75rem; margin-bottom: 0.2rem;" for="inline-call-name">Customer Name:</label>
-              <input type="text" class="form-input" id="inline-call-name" placeholder="e.g. David Miller" style="font-size: 0.85rem; padding: 0.35rem 0.5rem;">
+              <input type="text" class="form-input" id="inline-call-name" placeholder="e.g. John Doe" style="font-size: 0.85rem; padding: 0.35rem 0.5rem;">
             </div>
             <div>
               <label class="form-label" style="font-size: 0.75rem; margin-bottom: 0.2rem;" for="inline-call-phone">Phone Number:</label>
-              <input type="text" class="form-input" id="inline-call-phone" placeholder="e.g. 416-555-0188" style="font-size: 0.85rem; padding: 0.35rem 0.5rem; color: var(--primary); font-weight: 700;">
+              <input type="text" class="form-input" id="inline-call-phone" placeholder="e.g. 555-0188" style="font-size: 0.85rem; padding: 0.35rem 0.5rem; color: var(--primary); font-weight: 700;">
             </div>
             <div>
               <label class="form-label" style="font-size: 0.75rem; margin-bottom: 0.2rem;" for="inline-call-type">Call Type:</label>
@@ -227,7 +227,7 @@
             </div>
             <div>
               <label class="form-label" style="font-size: 0.75rem; margin-bottom: 0.2rem;" for="inline-call-outcome">Outcome / Notes:</label>
-              <input type="text" class="form-input" id="inline-call-outcome" placeholder="e.g. Quoting 8 casement windows" style="font-size: 0.85rem; padding: 0.35rem 0.5rem;">
+              <input type="text" class="form-input" id="inline-call-outcome" placeholder="e.g. Quoted consultation" style="font-size: 0.85rem; padding: 0.35rem 0.5rem;">
             </div>
             <div>
               <button type="button" class="btn-primary" id="btn-inline-add-call" style="font-size: 0.85rem; padding: 0.4rem 0.9rem; background: var(--success); border-color: var(--success);">+ Log Call</button>
@@ -240,7 +240,7 @@
       <div class="pdf-sheet" id="daily-summary-sheet">
         <div class="report-header" style="border-bottom: 2px solid #0f172a; padding-bottom: 1rem; margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: flex-start;">
           <div>
-            <h2 style="font-size: 1.5rem; font-weight: 800; color: #0f172a; letter-spacing: -0.02em; margin: 0;">OPTIMA WINDOWS AND DOORS</h2>
+            <h2 style="font-size: 1.5rem; font-weight: 800; color: #0f172a; letter-spacing: -0.02em; margin: 0;" id="report-client-header">CLIENT COMPANY</h2>
             <p style="font-size: 0.85rem; color: #475569; margin: 0.2rem 0 0 0;">Customer Appointment Booking &amp; Daily Activity Report</p>
           </div>
           <div style="text-align: right;">
@@ -252,11 +252,11 @@
         <div class="report-meta-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; background: #f8fafc; padding: 1rem; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 1.5rem;">
           <div>
             <div style="font-size: 0.75rem; text-transform: uppercase; color: #64748b; font-weight: 700;">Representative</div>
-            <div style="font-size: 0.95rem; font-weight: 700; color: #0f172a;" contenteditable="true" id="report-rep-name">Sabrina</div>
+            <div style="font-size: 0.95rem; font-weight: 700; color: #0f172a;" contenteditable="true" id="report-rep-name">Contractor</div>
           </div>
           <div>
             <div style="font-size: 0.75rem; text-transform: uppercase; color: #64748b; font-weight: 700;">Supervisor / Client</div>
-            <div style="font-size: 0.95rem; font-weight: 700; color: #0f172a;" contenteditable="true" id="report-supervisor-name">Optima Windows &amp; Doors</div>
+            <div style="font-size: 0.95rem; font-weight: 700; color: #0f172a;" contenteditable="true" id="report-supervisor-name">Client Company</div>
           </div>
           <div>
             <div style="font-size: 0.75rem; text-transform: uppercase; color: #64748b; font-weight: 700;">Total Shift Hours</div>
@@ -307,16 +307,16 @@
         <!-- Editable Supervisor Notes Section -->
         <div style="margin-bottom: 1.5rem;">
           <h4 style="font-size: 0.95rem; font-weight: 800; color: #0f172a; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.03em;">Representative Notes &amp; Supervisor Handover</h4>
-          <div class="editable-document-box" id="report-editable-notes" contenteditable="true">All booked consultations have been verified for Optima Windows and Doors. Evening callback queue organized for customer follow-ups.</div>
+          <div class="editable-document-box" id="report-editable-notes" contenteditable="true">All booked consultations have been verified and logged. Evening callback queue organized for customer follow-ups.</div>
         </div>
 
         <!-- Sign-off -->
         <div style="border-top: 1px solid #cbd5e1; padding-top: 1rem; margin-top: 2rem; display: flex; justify-content: space-between; font-size: 0.85rem; color: #64748b;">
           <div>
-            <strong>Submitted by:</strong> <span contenteditable="true">Sabrina (Appointment Coordinator)</span>
+            <strong>Submitted by:</strong> <span contenteditable="true">Contractor</span>
           </div>
           <div>
-            <strong>Approved by Supervisor:</strong> <span contenteditable="true" style="border-bottom: 1px dotted #94a3b8; display: inline-block; min-width: 150px;">Optima Windows &amp; Doors</span>
+            <strong>Approved by Supervisor:</strong> <span contenteditable="true" style="border-bottom: 1px dotted #94a3b8; display: inline-block; min-width: 150px;">Client Organization</span>
           </div>
         </div>
       </div>
@@ -479,7 +479,7 @@ Outbound Call (647) 555-9821  00:01:20  01:15 PM"></textarea>
       </div>
     </main>
 
-    <!-- TAB 4: Invoice Generator for Optima Windows and Doors -->
+    <!-- TAB 4: Invoice Generator -->
     <main class="tab-content" id="tab-invoice">
       <div class="card no-print" style="margin-bottom: 1.5rem;">
         <div class="card-title">
@@ -527,9 +527,9 @@ Outbound Call (647) 555-9821  00:01:20  01:15 PM"></textarea>
 
         <div class="invoice-header-grid">
           <div>
-            <h2 style="font-size: 1.6rem; font-weight: 800; color: #1e293b;" id="inv-contractor-name" contenteditable="true">Sabrina</h2>
-            <p style="font-size: 0.9rem; color: #64748b;" contenteditable="true">Appointment Booking &amp; Sales Coordinator</p>
-            <p style="font-size: 0.85rem; color: #64748b; margin-top: 0.5rem;" contenteditable="true">Toronto, ON • Canada</p>
+            <h2 style="font-size: 1.6rem; font-weight: 800; color: #1e293b;" id="inv-contractor-name" contenteditable="true">Contractor</h2>
+            <p style="font-size: 0.9rem; color: #64748b;" contenteditable="true">Appointment Booking &amp; Coordination</p>
+            <p style="font-size: 0.85rem; color: #64748b; margin-top: 0.5rem;" contenteditable="true">Canada</p>
           </div>
 
           <div style="text-align: right;">
@@ -542,7 +542,7 @@ Outbound Call (647) 555-9821  00:01:20  01:15 PM"></textarea>
 
         <div class="invoice-bill-to" style="margin-bottom: 2rem;">
           <span style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: #64748b; letter-spacing: 0.05em;">Billed To:</span>
-          <h3 style="font-size: 1.15rem; font-weight: 800; color: #0f172a; margin-top: 0.2rem;" id="inv-client-name" contenteditable="true">Optima Windows and Doors</h3>
+          <h3 style="font-size: 1.15rem; font-weight: 800; color: #0f172a; margin-top: 0.2rem;" id="inv-client-name" contenteditable="true">Client Company</h3>
           <p style="font-size: 0.85rem; color: #475569;" contenteditable="true">Sales &amp; Customer Appointment Services</p>
         </div>
 
@@ -597,11 +597,11 @@ Outbound Call (647) 555-9821  00:01:20  01:15 PM"></textarea>
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
           <div class="form-group">
             <label class="form-label" for="setting-name">Your Name:</label>
-            <input type="text" class="form-input" id="setting-name" value="Sabrina">
+            <input type="text" class="form-input" id="setting-name" value="Contractor">
           </div>
           <div class="form-group">
             <label class="form-label" for="setting-client">Client / Employer Name:</label>
-            <input type="text" class="form-input" id="setting-client" value="Optima Windows and Doors">
+            <input type="text" class="form-input" id="setting-client" value="Client Company">
           </div>
           <div class="form-group">
             <label class="form-label" for="setting-rate">Default Hourly Rate ($ CAD):</label>
@@ -812,11 +812,11 @@ Outbound Call (647) 555-9821  00:01:20  01:15 PM"></textarea>
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem;">
         <div>
           <label class="form-label" style="font-size: 0.8rem; margin-bottom: 0.2rem;" for="quick-appt-name">Customer Name:</label>
-          <input type="text" class="form-input" id="quick-appt-name" placeholder="e.g. David Miller">
+          <input type="text" class="form-input" id="quick-appt-name" placeholder="e.g. John Doe">
         </div>
         <div>
           <label class="form-label" style="font-size: 0.8rem; margin-bottom: 0.2rem;" for="quick-appt-phone">Phone Number:</label>
-          <input type="text" class="form-input" id="quick-appt-phone" placeholder="e.g. 416-555-0188" style="color: var(--primary); font-weight: 700;">
+          <input type="text" class="form-input" id="quick-appt-phone" placeholder="e.g. 555-0188" style="color: var(--primary); font-weight: 700;">
         </div>
       </div>
 
@@ -836,11 +836,10 @@ Outbound Call (647) 555-9821  00:01:20  01:15 PM"></textarea>
       <div class="form-group" style="margin-bottom: 0.75rem;">
         <label class="form-label" style="font-size: 0.8rem; margin-bottom: 0.2rem;" for="quick-appt-rep">Assigned Sales Representative:</label>
         <select class="form-input" id="quick-appt-rep">
-          <option value="David Miller (Sales Rep)" selected>David Miller (Sales Rep)</option>
-          <option value="Marco Rossi (Senior Rep)">Marco Rossi (Senior Rep)</option>
-          <option value="Alex Thompson (In-Home Specialist)">Alex Thompson (In-Home Specialist)</option>
-          <option value="John Kelly (Consultant)">John Kelly (Consultant)</option>
-          <option value="Sabrina (Lead Coordinator)">Sabrina (Lead Coordinator)</option>
+          <option value="Representative 1" selected>Representative 1</option>
+          <option value="Representative 2">Representative 2</option>
+          <option value="Representative 3">Representative 3</option>
+          <option value="Lead Coordinator">Lead Coordinator</option>
         </select>
       </div>
 

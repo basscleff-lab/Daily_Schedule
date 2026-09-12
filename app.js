@@ -1,29 +1,28 @@
-// Sabrina's Work Hub & Time Tracker - Core Engine
-// Client: Optima Windows and Doors
+// Daily Work Hub & Time Tracker - Core Engine
+// Client: Configurable in Settings
 
 (function() {
   'use strict';
 
   // --- Constants & Defaults ---
   const STORAGE_KEYS = {
-    SHIFTS: 'sabrina_shifts_v1',
-    ACTIVE_SESSION: 'sabrina_active_session_v1',
-    SETTINGS: 'sabrina_settings_v1',
-    TODAY_APPTS: 'sabrina_today_appts_v1',
-    COMPACT_MODE: 'sabrina_compact_mode_v1',
-    CALLBACKS: 'sabrina_callbacks_v1',
-    CALLS: 'sabrina_calls_v1',
-    SALES_REPS: 'sabrina_sales_reps_v1',
-    SNAPSHOTS: 'sabrina_snapshots_v1',
-    THEME: 'sabrina_theme_v1'
+    SHIFTS: 'tracker_shifts_v1',
+    ACTIVE_SESSION: 'tracker_active_session_v1',
+    SETTINGS: 'tracker_settings_v1',
+    TODAY_APPTS: 'tracker_today_appts_v1',
+    COMPACT_MODE: 'tracker_compact_mode_v1',
+    CALLBACKS: 'tracker_callbacks_v1',
+    CALLS: 'tracker_calls_v1',
+    SALES_REPS: 'tracker_sales_reps_v1',
+    SNAPSHOTS: 'tracker_snapshots_v1',
+    THEME: 'tracker_theme_v1'
   };
 
   const DEFAULT_SALES_REPS = [
-    'David Miller (Sales Rep)',
-    'Marco Rossi (Senior Rep)',
-    'Alex Thompson (In-Home Specialist)',
-    'John Kelly (Consultant)',
-    'Sabrina (Lead Coordinator)'
+    'Representative 1',
+    'Representative 2',
+    'Representative 3',
+    'Lead Coordinator'
   ];
 
   const ACTIVITY_NAMES = {
@@ -35,7 +34,7 @@
     off_phone_work: { name: 'Off-Phone / Booking Admin', isPhone: false, icon: '📋' }
   };
 
-  const syncChannel = window.BroadcastChannel ? new BroadcastChannel('sabrina_sync_channel') : null;
+  const syncChannel = window.BroadcastChannel ? new BroadcastChannel('tracker_sync_channel') : null;
 
   // --- Application State ---
   let state = {
@@ -43,8 +42,8 @@
     build: '2026.09.11-rev2',
     releaseDate: '2026-09-11',
     settings: {
-      contractorName: 'Sabrina',
-      clientName: 'Optima Windows and Doors',
+      contractorName: 'Contractor',
+      clientName: 'Client Company',
       hourlyRate: 25.00
     },
     shifts: [],
@@ -780,8 +779,8 @@
     const hours = document.getElementById('report-total-hours')?.textContent || '0h 00m';
     const notes = document.getElementById('report-editable-notes')?.innerText || '';
 
-    let text = `OPTIMA WINDOWS AND DOORS - DAILY CALL REPORT\n`;
-    text += `Date: ${reportDate}\nRepresentative: Sabrina\nShift Hours: ${hours}\nAppointments Booked: ${dayAppts}\nTotal Calls Logged: ${dayCalls.length}\n\n`;
+    let text = `${(state.settings.clientName || 'CLIENT COMPANY').toUpperCase()} - DAILY CALL REPORT\n`;
+    text += `Date: ${reportDate}\nRepresentative: ${state.settings.contractorName || 'Contractor'}\nShift Hours: ${hours}\nAppointments Booked: ${dayAppts}\nTotal Calls Logged: ${dayCalls.length}\n\n`;
     text += `LOGGED CALLS & LEADS:\n`;
     if (dayCalls.length === 0) {
       text += `(No itemized calls logged)\n`;
@@ -1855,7 +1854,7 @@
       const phone = (quickApptPhone?.value || '').trim();
       const apptDateVal = quickApptDate?.value || formatDateKey(new Date(Date.now() + 86400 * 1000));
       const apptTimeVal = (quickApptTime?.value || '10:00 AM').trim();
-      const repVal = quickApptRep?.value || 'David Miller (Sales Rep)';
+      const repVal = quickApptRep?.value || (state.salesReps && state.salesReps[0]) || 'Representative 1';
       const isCb = quickApptCbCheck ? quickApptCbCheck.checked : false;
 
       const newCall = {
@@ -2124,8 +2123,8 @@ Outbound Call (905) 555-7711  00:05:00  05:30 PM`;
 
     // Settings
     document.getElementById('btn-save-settings')?.addEventListener('click', () => {
-      state.settings.contractorName = document.getElementById('setting-name')?.value || 'Sabrina';
-      state.settings.clientName = document.getElementById('setting-client')?.value || 'Optima Windows and Doors';
+      state.settings.contractorName = document.getElementById('setting-name')?.value || 'Contractor';
+      state.settings.clientName = document.getElementById('setting-client')?.value || 'Client Company';
       state.settings.hourlyRate = parseFloat(document.getElementById('setting-rate')?.value) || 25.00;
       persistState();
       updateUI();

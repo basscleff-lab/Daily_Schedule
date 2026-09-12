@@ -26,11 +26,10 @@ if (Test-Path $script:versionFile) {
 }
 
 $script:defaultSalesReps = @(
-    "David Miller (Sales Rep)",
-    "Marco Rossi (Senior Rep)",
-    "Alex Thompson (In-Home Specialist)",
-    "John Kelly (Consultant)",
-    "Sabrina (Lead Coordinator)"
+    "Representative 1",
+    "Representative 2",
+    "Representative 3",
+    "Lead Coordinator"
 )
 
 # Create a daily startup backup if shifts.json exists
@@ -1319,7 +1318,7 @@ function Show-QuickApptModal([switch]$NoShow) {
         $phone = $tbPhone.Text.Trim()
         $apptDateVal = if ($tbApptDate.Text.Trim()) { $tbApptDate.Text.Trim() } else { (Get-Date).AddDays(1).ToString("yyyy-MM-dd") }
         $apptTimeVal = if ($tbApptTime.Text.Trim()) { $tbApptTime.Text.Trim() } else { "10:00 AM" }
-        $repVal = if ($cbApptRep.Text -and $cbApptRep.Text.Trim()) { $cbApptRep.Text.Trim() } elseif ($cbApptRep.SelectedItem) { $cbApptRep.SelectedItem.Content } else { "David Miller (Sales Rep)" }
+        $repVal = if ($cbApptRep.Text -and $cbApptRep.Text.Trim()) { $cbApptRep.Text.Trim() } elseif ($cbApptRep.SelectedItem) { $cbApptRep.SelectedItem.Content } else { "Representative 1" }
 
         # Auto-save newly typed rep into sales_reps.json if not in list
         $currentReps = Get-SalesRepsList
