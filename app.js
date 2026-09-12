@@ -1592,37 +1592,58 @@
     const btn = document.getElementById('btn-check-updates');
     if (btn) {
       btn.disabled = true;
-      btn.textContent = '⏳ Checking for updates...';
+      btn.textContent = '⏳ Checking GitHub repository...';
     }
 
-    setTimeout(() => {
-      if (btn) {
-        btn.disabled = false;
-        btn.textContent = '🔄 Check for Updates / Pull Latest Code';
-      }
+    const githubRawUrl = 'https://raw.githubusercontent.com/basscleff-lab/Daily_Schedule/main/version.json?t=' + Date.now();
 
-      fetch('version.json?t=' + Date.now())
-        .then(res => res.json())
-        .then(vData => {
-          const currentVer = state.version || '1.5.0';
-          const isUpToDate = vData.version === currentVer && vData.build === state.build;
+    fetch(githubRawUrl)
+      .then(res => {
+        if (!res.ok) throw new Error('GitHub returned status ' + res.status);
+        return res.json();
+      })
+      .then(vData => {
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = '🔄 Check for Updates / Pull Latest Code';
+        }
+        const currentVer = state.version || '1.5.0';
+        const isUpToDate = vData.version === currentVer && vData.build === state.build;
 
-          let msg = `✅ Safe Snapshot Created!\n\nVersion Status: v${vData.version} (Build ${vData.build})\n`;
-          if (isUpToDate) {
-            msg += `You are currently running the latest release.\n\n`;
-          } else {
-            msg += `New update available: v${vData.version}!\n\n`;
-          }
-          msg += `To pull latest updates on Sabrina's PC:\n1. Ensure updates are pushed to GitHub.\n2. Run Deploy_To_This_PC.bat or click to pull.\n3. All live client records in data\\ are safe and protected.`;
-          
-          showToast(`Snapshot created! Status: v${vData.version}`, 'success');
-          alert(msg);
-        })
-        .catch(() => {
-          showToast('Pre-update safety snapshot saved!', 'success');
-          alert(`✅ Pre-update snapshot saved!\n\nTo update:\n1. Pull updates from GitHub repository.\n2. Or run Deploy_To_This_PC.bat.\n\nAll live data in data\\ is strictly preserved.`);
-        });
-    }, 600);
+        let msg = `✅ Safe Snapshot Created!\n\n`;
+        if (isUpToDate) {
+          msg += `Status: Up to date! (v${vData.version} - Build ${vData.build})\n\n`;
+          msg += `Sabrina is currently running the latest release from GitHub.`;
+          showToast(`Up to date! Latest release: v${vData.version}`, 'success');
+        } else {
+          msg += `🚀 New Update Available: v${vData.version} (Build ${vData.build})!\n`;
+          if (vData.notes) msg += `Notes: ${vData.notes}\n\n`;
+          msg += `To apply this update on Sabrina's PC:\n1. Run Deploy_To_This_PC.bat (or 'git pull').\n2. All local shift logs in data\\ are safe and protected.`;
+          showToast(`New update available: v${vData.version}!`, 'info');
+        }
+        alert(msg);
+      })
+      .catch(() => {
+        // Fallback to local version.json check
+        fetch('version.json?t=' + Date.now())
+          .then(res => res.json())
+          .then(vData => {
+            if (btn) {
+              btn.disabled = false;
+              btn.textContent = '🔄 Check for Updates / Pull Latest Code';
+            }
+            showToast('Snapshot saved! Local version: v' + (vData.version || '1.5.0'), 'success');
+            alert(`✅ Pre-update snapshot saved!\n\nLocal Version: v${vData.version || '1.5.0'}\nGitHub Repo: github.com/basscleff-lab/Daily_Schedule\n\nRun Deploy_To_This_PC.bat to sync latest files.`);
+          })
+          .catch(() => {
+            if (btn) {
+              btn.disabled = false;
+              btn.textContent = '🔄 Check for Updates / Pull Latest Code';
+            }
+            showToast('Pre-update safety snapshot saved!', 'success');
+            alert(`✅ Pre-update snapshot saved!\n\nAll live data in data\\ is strictly preserved.`);
+          });
+      });
   }
 
   // --- Event Bindings ---
