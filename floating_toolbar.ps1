@@ -25,8 +25,8 @@ $script:historyDir = Join-Path $script:dataDir "history"
 if (!(Test-Path $script:historyDir)) { New-Item -ItemType Directory -Path $script:historyDir -Force | Out-Null }
 
 $script:versionFile = Join-Path $PSScriptRoot "version.json"
-$script:appVersion = "1.5.2"
-$script:appBuild = "2026.09.12-rev3"
+$script:appVersion = "1.5.3"
+$script:appBuild = "2026.09.12-rev4"
 if (Test-Path $script:versionFile) {
     try {
         $vData = Get-Content $script:versionFile -Raw | ConvertFrom-Json
@@ -1002,6 +1002,25 @@ function Adjust-TimeString([string]$currentTimeStr, [int]$deltaMinutes) {
     return (Get-Date).AddMinutes($deltaMinutes).ToString("hh:mm tt")
 }
 
+function Set-ClipboardSafe([string]$text) {
+    if ([string]::IsNullOrEmpty($text)) { return }
+    try {
+        [System.Windows.Clipboard]::SetText($text)
+        return
+    } catch {}
+    try {
+        [System.Windows.Clipboard]::SetDataObject($text, $true)
+        return
+    } catch {}
+}
+
+function Set-MgrStatus([string]$msg) {
+    if ($script:cbManagerWindow -and $script:cbManagerWindow.IsLoaded) {
+        $st = $script:cbManagerWindow.FindName("TxtMgrStatus")
+        if ($st) { $st.Text = $msg }
+    }
+}
+
 function Apply-QuickApptModalTheme($apptWin, $themeName) {
     if (!$apptWin) { return }
     $bc = [System.Windows.Media.BrushConverter]::new()
@@ -1436,23 +1455,24 @@ function Show-QuickApptModal([switch]$NoShow) {
     })
 
     # Stepper buttons
-    $apptWin.FindName("BtnCbM1h").Add_Click({ $tbTime.Text = Adjust-TimeString $tbTime.Text -60 })
-    $apptWin.FindName("BtnCbM30m").Add_Click({ $tbTime.Text = Adjust-TimeString $tbTime.Text -30 })
-    $apptWin.FindName("BtnCbM15m").Add_Click({ $tbTime.Text = Adjust-TimeString $tbTime.Text -15 })
-    $apptWin.FindName("BtnCbM10m").Add_Click({ $tbTime.Text = Adjust-TimeString $tbTime.Text -10 })
-    $apptWin.FindName("BtnCbM5m").Add_Click({ $tbTime.Text = Adjust-TimeString $tbTime.Text -5 })
+    $apptWin.FindName("BtnCbM1h").Add_Click({ $t = $apptWin.FindName("TbQuickTime"); if ($t) { $t.Text = Adjust-TimeString $t.Text -60 } })
+    $apptWin.FindName("BtnCbM30m").Add_Click({ $t = $apptWin.FindName("TbQuickTime"); if ($t) { $t.Text = Adjust-TimeString $t.Text -30 } })
+    $apptWin.FindName("BtnCbM15m").Add_Click({ $t = $apptWin.FindName("TbQuickTime"); if ($t) { $t.Text = Adjust-TimeString $t.Text -15 } })
+    $apptWin.FindName("BtnCbM10m").Add_Click({ $t = $apptWin.FindName("TbQuickTime"); if ($t) { $t.Text = Adjust-TimeString $t.Text -10 } })
+    $apptWin.FindName("BtnCbM5m").Add_Click({ $t = $apptWin.FindName("TbQuickTime"); if ($t) { $t.Text = Adjust-TimeString $t.Text -5 } })
 
-    $apptWin.FindName("BtnCbP5m").Add_Click({ $tbTime.Text = Adjust-TimeString $tbTime.Text 5 })
-    $apptWin.FindName("BtnCbP10m").Add_Click({ $tbTime.Text = Adjust-TimeString $tbTime.Text 10 })
-    $apptWin.FindName("BtnCbP15m").Add_Click({ $tbTime.Text = Adjust-TimeString $tbTime.Text 15 })
-    $apptWin.FindName("BtnCbP30m").Add_Click({ $tbTime.Text = Adjust-TimeString $tbTime.Text 30 })
-    $apptWin.FindName("BtnCbP1h").Add_Click({ $tbTime.Text = Adjust-TimeString $tbTime.Text 60 })
+    $apptWin.FindName("BtnCbP5m").Add_Click({ $t = $apptWin.FindName("TbQuickTime"); if ($t) { $t.Text = Adjust-TimeString $t.Text 5 } })
+    $apptWin.FindName("BtnCbP10m").Add_Click({ $t = $apptWin.FindName("TbQuickTime"); if ($t) { $t.Text = Adjust-TimeString $t.Text 10 } })
+    $apptWin.FindName("BtnCbP15m").Add_Click({ $t = $apptWin.FindName("TbQuickTime"); if ($t) { $t.Text = Adjust-TimeString $t.Text 15 } })
+    $apptWin.FindName("BtnCbP30m").Add_Click({ $t = $apptWin.FindName("TbQuickTime"); if ($t) { $t.Text = Adjust-TimeString $t.Text 30 } })
+    $apptWin.FindName("BtnCbP1h").Add_Click({ $t = $apptWin.FindName("TbQuickTime"); if ($t) { $t.Text = Adjust-TimeString $t.Text 60 } })
 
-    $apptWin.FindName("BtnCbToday").Add_Click({ $tbDate.Text = (Get-Date).ToString("yyyy-MM-dd") })
-    $apptWin.FindName("BtnCbTom").Add_Click({ $tbDate.Text = (Get-Date).AddDays(1).ToString("yyyy-MM-dd") })
+    $apptWin.FindName("BtnCbToday").Add_Click({ $d = $apptWin.FindName("TbQuickDate"); if ($d) { $d.Text = (Get-Date).ToString("yyyy-MM-dd") } })
+    $apptWin.FindName("BtnCbTom").Add_Click({ $d = $apptWin.FindName("TbQuickDate"); if ($d) { $d.Text = (Get-Date).AddDays(1).ToString("yyyy-MM-dd") } })
 
     $apptWin.Add_Loaded({
-        $tbName.Focus()
+        $tN = $apptWin.FindName("TbQuickName")
+        if ($tN) { $tN.Focus() }
     })
 
     $apptWin.FindName("BtnApptClose").Add_Click({
@@ -1471,11 +1491,20 @@ function Show-QuickApptModal([switch]$NoShow) {
         $script:state.TodayAppts++
         $TxtAppts.Text = $script:state.TodayAppts.ToString()
 
-        $name = if ($tbName.Text.Trim()) { $tbName.Text.Trim() } else { "Customer" }
-        $phone = $tbPhone.Text.Trim()
-        $apptDateVal = if ($tbApptDate.Text.Trim()) { $tbApptDate.Text.Trim() } else { (Get-Date).AddDays(1).ToString("yyyy-MM-dd") }
-        $apptTimeVal = if ($tbApptTime.Text.Trim()) { $tbApptTime.Text.Trim() } else { "10:00 AM" }
-        $repVal = if ($cbApptRep.Text -and $cbApptRep.Text.Trim()) { $cbApptRep.Text.Trim() } elseif ($cbApptRep.SelectedItem) { $cbApptRep.SelectedItem.Content } else { "Representative 1" }
+        $tName = $apptWin.FindName("TbQuickName")
+        $tPhone = $apptWin.FindName("TbQuickPhone")
+        $tApptDate = $apptWin.FindName("TbApptDate")
+        $tApptTime = $apptWin.FindName("TbApptTime")
+        $cApptRep = $apptWin.FindName("CbApptRep")
+        $cChkCb = $apptWin.FindName("ChkQuickCallback")
+        $tQuickDate = $apptWin.FindName("TbQuickDate")
+        $tQuickTime = $apptWin.FindName("TbQuickTime")
+
+        $name = if ($tName -and $tName.Text.Trim()) { $tName.Text.Trim() } else { "Customer" }
+        $phone = if ($tPhone) { $tPhone.Text.Trim() } else { "" }
+        $apptDateVal = if ($tApptDate -and $tApptDate.Text.Trim()) { $tApptDate.Text.Trim() } else { (Get-Date).AddDays(1).ToString("yyyy-MM-dd") }
+        $apptTimeVal = if ($tApptTime -and $tApptTime.Text.Trim()) { $tApptTime.Text.Trim() } else { "10:00 AM" }
+        $repVal = if ($cApptRep -and $cApptRep.Text -and $cApptRep.Text.Trim()) { $cApptRep.Text.Trim() } elseif ($cApptRep -and $cApptRep.SelectedItem) { $cApptRep.SelectedItem.Content } else { "Representative 1" }
 
         # Auto-save newly typed rep into sales_reps.json if not in list
         $currentReps = Get-SalesRepsList
@@ -1499,10 +1528,10 @@ function Show-QuickApptModal([switch]$NoShow) {
         $existingCalls = Get-CallsList
         Save-CallsList (@($callItem) + @($existingCalls))
 
-        if ($chkCb.IsChecked -eq $true) {
-            $cbDate = if ($tbDate.Text.Trim()) { $tbDate.Text.Trim() } else { (Get-Date).ToString("yyyy-MM-dd") }
-            $cbTime = if ($tbTime.Text.Trim()) { $tbTime.Text.Trim() } else { (Get-Date).AddHours(1).ToString("hh:mm tt") }
-            Add-CallbackItem -name $name -phone $phone -email "" -date $cbDate -time $cbTime -notes "Appt follow-up with $repVal ($apptDateVal at $apptTimeVal)"
+        if ($cChkCb -and $cChkCb.IsChecked -eq $true) {
+            $cbDate = if ($tQuickDate -and $tQuickDate.Text.Trim()) { $tQuickDate.Text.Trim() } else { (Get-Date).ToString("yyyy-MM-dd") }
+            $cbTime = if ($tQuickTime -and $tQuickTime.Text.Trim()) { $tQuickTime.Text.Trim() } else { (Get-Date).AddHours(1).ToString("hh:mm tt") }
+            Add-CallbackItem $name $phone "" $cbDate $cbTime "Appt follow-up with $repVal ($apptDateVal at $apptTimeVal)"
         }
 
         Save-SessionState
@@ -1746,6 +1775,295 @@ function Apply-CallbackManagerTheme($mgrWin, $themeName) {
     Apply-CallbackManagerFilterStyles $mgrWin $themeName
 }
 
+function Render-CallbackManagerCards {
+    if (!$script:cbManagerWindow -or !$script:cbManagerWindow.IsLoaded) { return }
+    $container = $script:cbManagerWindow.FindName("CallbacksContainer")
+    if (!$container) { return }
+    $container.Children.Clear()
+
+    $cbs = Get-CallbacksList
+    $nowEpoch = Get-NowEpochMs
+    $todayStr = (Get-Date).ToString("yyyy-MM-dd")
+
+    $filtered = @()
+    foreach ($c in $cbs) {
+        $isDue = ($c.status -eq "PENDING") -and (($c.dueEpoch -gt 0 -and $c.dueEpoch -le $nowEpoch) -or ($c.callbackDate -lt $todayStr))
+        if ($script:currentFilter -eq "all") {
+            $filtered += $c
+        } elseif ($script:currentFilter -eq "due" -and $isDue) {
+            $filtered += $c
+        } elseif ($script:currentFilter -eq "pending" -and $c.status -eq "PENDING" -and !$isDue) {
+            $filtered += $c
+        } elseif ($script:currentFilter -eq "done" -and $c.status -eq "COMPLETED") {
+            $filtered += $c
+        }
+    }
+
+    $bc = [System.Windows.Media.BrushConverter]::new()
+    $curTheme = $script:state.Theme
+
+    if ($filtered.Count -eq 0) {
+        $emptyTb = New-Object System.Windows.Controls.TextBlock
+        $emptyTb.Text = "No callbacks found in this view."
+        $emptyTb.Foreground = $bc.ConvertFromString("#64748B")
+        $emptyTb.Margin = [System.Windows.Thickness]::new(10)
+        $emptyTb.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
+        $container.Children.Add($emptyTb) | Out-Null
+        return
+    }
+
+    foreach ($c in $filtered) {
+        $isDue = ($c.status -eq "PENDING") -and (($c.dueEpoch -gt 0 -and $c.dueEpoch -le $nowEpoch) -or ($c.callbackDate -lt $todayStr))
+        $cardBorder = New-Object System.Windows.Controls.Border
+        $cardBorder.CornerRadius = [System.Windows.CornerRadius]::new(6)
+        $cardBorder.Padding = [System.Windows.Thickness]::new(8,6,8,6)
+        $cardBorder.Margin = [System.Windows.Thickness]::new(0,0,0,6)
+        $cardBorder.BorderThickness = [System.Windows.Thickness]::new(1)
+
+        if ($isDue) {
+            if ($curTheme -eq "light") {
+                $cardBorder.Background = $bc.ConvertFromString("#FEF2F2")
+                $cardBorder.BorderBrush = $bc.ConvertFromString("#F87171")
+            } elseif ($curTheme -eq "highvis") {
+                $cardBorder.Background = $bc.ConvertFromString("#000000")
+                $cardBorder.BorderBrush = $bc.ConvertFromString("#FF0000")
+                $cardBorder.BorderThickness = [System.Windows.Thickness]::new(2)
+            } else {
+                $cardBorder.Background = $bc.ConvertFromString("#450A0A")
+                $cardBorder.BorderBrush = $bc.ConvertFromString("#EF4444")
+            }
+        } elseif ($c.status -eq "COMPLETED") {
+            if ($curTheme -eq "light") {
+                $cardBorder.Background = $bc.ConvertFromString("#F0FDF4")
+                $cardBorder.BorderBrush = $bc.ConvertFromString("#86EFAC")
+            } elseif ($curTheme -eq "highvis") {
+                $cardBorder.Background = $bc.ConvertFromString("#000000")
+                $cardBorder.BorderBrush = $bc.ConvertFromString("#00FF00")
+                $cardBorder.BorderThickness = [System.Windows.Thickness]::new(2)
+            } else {
+                $cardBorder.Background = $bc.ConvertFromString("#064E3B")
+                $cardBorder.BorderBrush = $bc.ConvertFromString("#047857")
+            }
+        } else {
+            if ($curTheme -eq "light") {
+                $cardBorder.Background = $bc.ConvertFromString("#FFFFFF")
+                $cardBorder.BorderBrush = $bc.ConvertFromString("#CBD5E1")
+            } elseif ($curTheme -eq "highvis") {
+                $cardBorder.Background = $bc.ConvertFromString("#000000")
+                $cardBorder.BorderBrush = $bc.ConvertFromString("#FFFF00")
+                $cardBorder.BorderThickness = [System.Windows.Thickness]::new(1.5)
+            } else {
+                $cardBorder.Background = $bc.ConvertFromString("#0F172A")
+                $cardBorder.BorderBrush = $bc.ConvertFromString("#334155")
+            }
+        }
+
+        $cardGrid = New-Object System.Windows.Controls.Grid
+        $cCol0 = New-Object System.Windows.Controls.ColumnDefinition
+        $cCol0.Width = New-Object System.Windows.GridLength(1, [System.Windows.GridUnitType]::Star)
+        $cCol1 = New-Object System.Windows.Controls.ColumnDefinition
+        $cCol1.Width = [System.Windows.GridLength]::Auto
+        $cardGrid.ColumnDefinitions.Add($cCol0)
+        $cardGrid.ColumnDefinitions.Add($cCol1)
+
+        # Left side details
+        $leftStack = New-Object System.Windows.Controls.StackPanel
+        $leftStack.Orientation = [System.Windows.Controls.Orientation]::Vertical
+
+        $topRow = New-Object System.Windows.Controls.StackPanel
+        $topRow.Orientation = [System.Windows.Controls.Orientation]::Horizontal
+
+        $statusBadge = New-Object System.Windows.Controls.TextBlock
+        if ($isDue) {
+            $statusBadge.Text = "[DUE NOW] "
+            $statusBadge.Foreground = if ($curTheme -eq "highvis") { $bc.ConvertFromString("#FF0000") } else { $bc.ConvertFromString("#EF4444") }
+            $statusBadge.FontWeight = [System.Windows.FontWeights]::Bold
+        } elseif ($c.status -eq "COMPLETED") {
+            $statusBadge.Text = "[DONE] "
+            $statusBadge.Foreground = if ($curTheme -eq "highvis") { $bc.ConvertFromString("#00FF00") } elseif ($curTheme -eq "light") { $bc.ConvertFromString("#16A34A") } else { $bc.ConvertFromString("#4ADE80") }
+            $statusBadge.FontWeight = [System.Windows.FontWeights]::Bold
+        } else {
+            $statusBadge.Text = "[SCHEDULED] "
+            $statusBadge.Foreground = if ($curTheme -eq "highvis") { $bc.ConvertFromString("#00FFFF") } elseif ($curTheme -eq "light") { $bc.ConvertFromString("#0284C7") } else { $bc.ConvertFromString("#38BDF8") }
+            $statusBadge.FontWeight = [System.Windows.FontWeights]::Bold
+        }
+        $statusBadge.FontSize = 10
+        $topRow.Children.Add($statusBadge) | Out-Null
+
+        $nameTb = New-Object System.Windows.Controls.TextBlock
+        $nameTb.Text = [string]$c.contactName + " - " + [string]$c.callbackDate + " at " + [string]$c.callbackTime
+        if ($curTheme -eq "light") {
+            $nameTb.Foreground = if ($isDue) { $bc.ConvertFromString("#991B1B") } elseif ($c.status -eq "COMPLETED") { $bc.ConvertFromString("#166534") } else { $bc.ConvertFromString("#0F172A") }
+        } elseif ($curTheme -eq "highvis") {
+            $nameTb.Foreground = $bc.ConvertFromString("#FFFF00")
+        } else {
+            $nameTb.Foreground = $bc.ConvertFromString("#F8FAFC")
+        }
+        $nameTb.FontWeight = [System.Windows.FontWeights]::Bold
+        $nameTb.FontSize = 12
+        $topRow.Children.Add($nameTb) | Out-Null
+
+        $leftStack.Children.Add($topRow) | Out-Null
+
+        $contactRow = New-Object System.Windows.Controls.TextBlock
+        $contactRow.Text = "Phone: " + [string]$c.phone
+        if ($curTheme -eq "light") {
+            $contactRow.Foreground = if ($isDue) { $bc.ConvertFromString("#B91C1C") } elseif ($c.status -eq "COMPLETED") { $bc.ConvertFromString("#15803D") } else { $bc.ConvertFromString("#0284C7") }
+        } elseif ($curTheme -eq "highvis") {
+            $contactRow.Foreground = $bc.ConvertFromString("#00FFFF")
+        } else {
+            $contactRow.Foreground = $bc.ConvertFromString("#93C5FD")
+        }
+        $contactRow.FontSize = 11
+        $contactRow.Margin = [System.Windows.Thickness]::new(0,2,0,2)
+        $leftStack.Children.Add($contactRow) | Out-Null
+
+        if ($c.notes) {
+            $notesTb = New-Object System.Windows.Controls.TextBlock
+            $notesTb.Text = "Note: " + [string]$c.notes
+            if ($curTheme -eq "light") {
+                $notesTb.Foreground = $bc.ConvertFromString("#475569")
+            } elseif ($curTheme -eq "highvis") {
+                $notesTb.Foreground = $bc.ConvertFromString("#FFFFFF")
+            } else {
+                $notesTb.Foreground = $bc.ConvertFromString("#CBD5E1")
+            }
+            $notesTb.FontSize = 10
+            $notesTb.TextWrapping = [System.Windows.TextWrapping]::Wrap
+            $leftStack.Children.Add($notesTb) | Out-Null
+        }
+
+        [System.Windows.Controls.Grid]::SetColumn($leftStack, 0)
+        $cardGrid.Children.Add($leftStack) | Out-Null
+
+        # Right side actions
+        $rightStack = New-Object System.Windows.Controls.StackPanel
+        $rightStack.Orientation = [System.Windows.Controls.Orientation]::Horizontal
+        $rightStack.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+
+        # Copy Phone Button
+        $btnCpPhone = New-Object System.Windows.Controls.Button
+        $btnCpPhone.Content = "Phone"
+        $btnCpPhone.Background = $bc.ConvertFromString("#0284C7")
+        $btnCpPhone.Foreground = $bc.ConvertFromString("#FFFFFF")
+        $btnCpPhone.FontWeight = [System.Windows.FontWeights]::Bold
+        $btnCpPhone.FontSize = 10
+        $btnCpPhone.Padding = [System.Windows.Thickness]::new(6,4,6,4)
+        $btnCpPhone.Margin = [System.Windows.Thickness]::new(0,0,4,0)
+        $btnCpPhone.Cursor = [System.Windows.Input.Cursors]::Hand
+        $btnCpPhone.ToolTip = "Copy phone to clipboard for Telus softphone"
+        $itemPhone = [string]$c.phone
+        $btnCpPhone.Add_Click({
+            if (![string]::IsNullOrWhiteSpace($itemPhone)) {
+                Set-ClipboardSafe $itemPhone
+                Set-MgrStatus "Copied phone: $itemPhone"
+            } else {
+                Set-MgrStatus "No phone number to copy."
+            }
+        }.GetNewClosure())
+        $rightStack.Children.Add($btnCpPhone) | Out-Null
+
+        # Copy Details / SMS Button
+        $btnCpDetails = New-Object System.Windows.Controls.Button
+        $btnCpDetails.Content = "Text"
+        if ($curTheme -eq "light") {
+            $btnCpDetails.Background = $bc.ConvertFromString("#E2E8F0")
+            $btnCpDetails.Foreground = $bc.ConvertFromString("#334155")
+        } elseif ($curTheme -eq "highvis") {
+            $btnCpDetails.Background = $bc.ConvertFromString("#000000")
+            $btnCpDetails.Foreground = $bc.ConvertFromString("#FFFF00")
+            $btnCpDetails.BorderBrush = $bc.ConvertFromString("#FFFF00")
+        } else {
+            $btnCpDetails.Background = $bc.ConvertFromString("#334155")
+            $btnCpDetails.Foreground = $bc.ConvertFromString("#CBD5E1")
+        }
+        $btnCpDetails.FontSize = 10
+        $btnCpDetails.Padding = [System.Windows.Thickness]::new(6,4,6,4)
+        $btnCpDetails.Margin = [System.Windows.Thickness]::new(0,0,4,0)
+        $btnCpDetails.Cursor = [System.Windows.Input.Cursors]::Hand
+        $btnCpDetails.ToolTip = "Copy full summary for email/SMS"
+        $notePart = if ($c.notes) { " | Notes: " + [string]$c.notes } else { "" }
+        $itemDetails = "Callback: " + [string]$c.contactName + " (" + [string]$c.phone + ") Scheduled: " + [string]$c.callbackDate + " at " + [string]$c.callbackTime + $notePart
+        $cName = [string]$c.contactName
+        $btnCpDetails.Add_Click({
+            Set-ClipboardSafe $itemDetails
+            Set-MgrStatus "Copied SMS/details for $cName"
+        }.GetNewClosure())
+        $rightStack.Children.Add($btnCpDetails) | Out-Null
+
+        # Snooze +15m
+        $itemId = [string]$c.id
+        if ($c.status -eq "PENDING") {
+            $btnSnooze = New-Object System.Windows.Controls.Button
+            $btnSnooze.Content = "+15m"
+            $btnSnooze.Background = $bc.ConvertFromString("#D97706")
+            $btnSnooze.Foreground = $bc.ConvertFromString("#FFFFFF")
+            $btnSnooze.FontSize = 10
+            $btnSnooze.Padding = [System.Windows.Thickness]::new(6,4,6,4)
+            $btnSnooze.Margin = [System.Windows.Thickness]::new(0,0,4,0)
+            $btnSnooze.Cursor = [System.Windows.Input.Cursors]::Hand
+            $btnSnooze.ToolTip = "Snooze reminder by 15 minutes"
+            $btnSnooze.Add_Click({
+                Snooze-Callback $itemId 15
+                Set-MgrStatus "Snoozed 15 minutes"
+                Render-CallbackManagerCards
+            }.GetNewClosure())
+            $rightStack.Children.Add($btnSnooze) | Out-Null
+
+            # Mark Done
+            $btnDone = New-Object System.Windows.Controls.Button
+            $btnDone.Content = "Done"
+            $btnDone.Background = $bc.ConvertFromString("#16A34A")
+            $btnDone.Foreground = $bc.ConvertFromString("#FFFFFF")
+            $btnDone.FontWeight = [System.Windows.FontWeights]::Bold
+            $btnDone.FontSize = 10
+            $btnDone.Padding = [System.Windows.Thickness]::new(6,4,6,4)
+            $btnDone.Margin = [System.Windows.Thickness]::new(0,0,4,0)
+            $btnDone.Cursor = [System.Windows.Input.Cursors]::Hand
+            $btnDone.ToolTip = "Mark callback completed"
+            $btnDone.Add_Click({
+                Complete-Callback $itemId
+                Set-MgrStatus "Marked completed!"
+                Render-CallbackManagerCards
+            }.GetNewClosure())
+            $rightStack.Children.Add($btnDone) | Out-Null
+        }
+
+        # Delete button
+        $btnDel = New-Object System.Windows.Controls.Button
+        $btnDel.Content = "Del"
+        if ($curTheme -eq "light") {
+            $btnDel.Background = $bc.ConvertFromString("#FEE2E2")
+            $btnDel.Foreground = $bc.ConvertFromString("#DC2626")
+            $btnDel.BorderBrush = $bc.ConvertFromString("#FCA5A5")
+        } elseif ($curTheme -eq "highvis") {
+            $btnDel.Background = $bc.ConvertFromString("#000000")
+            $btnDel.Foreground = $bc.ConvertFromString("#FF0000")
+            $btnDel.BorderBrush = $bc.ConvertFromString("#FF0000")
+        } else {
+            $btnDel.Background = $bc.ConvertFromString("#7F1D1D")
+            $btnDel.Foreground = $bc.ConvertFromString("#FCA5A5")
+            $btnDel.BorderBrush = $bc.ConvertFromString("#991B1B")
+        }
+        $btnDel.FontSize = 10
+        $btnDel.Padding = [System.Windows.Thickness]::new(6,4,6,4)
+        $btnDel.Cursor = [System.Windows.Input.Cursors]::Hand
+        $btnDel.ToolTip = "Delete callback entry"
+        $btnDel.Add_Click({
+            Delete-Callback $itemId
+            Set-MgrStatus "Deleted callback entry."
+            Render-CallbackManagerCards
+        }.GetNewClosure())
+        $rightStack.Children.Add($btnDel) | Out-Null
+
+        [System.Windows.Controls.Grid]::SetColumn($rightStack, 1)
+        $cardGrid.Children.Add($rightStack) | Out-Null
+
+        $cardBorder.Child = $cardGrid
+        $container.Children.Add($cardBorder) | Out-Null
+    }
+}
+
 function Show-CallbackManager {
     if ($script:cbManagerWindow -and $script:cbManagerWindow.IsLoaded) {
         $script:cbManagerWindow.Activate()
@@ -1789,16 +2107,15 @@ function Show-CallbackManager {
             <!-- Header -->
             <Grid Grid.Row="0" Margin="0,0,0,10" Name="MgrHeaderBar" Background="Transparent" Cursor="SizeAll">
                 <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock Name="TxtMgrTitle" Text="Callback Reminders" Foreground="#F8FAFC" FontWeight="Bold" FontSize="14" Margin="0,0,10,0"/>
-                    <TextBlock Name="TxtMgrStatus" Text="Ready" Foreground="#38BDF8" FontSize="11" VerticalAlignment="Center"/>
-                </StackPanel>
-                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                <TextBlock Name="TxtMgrTitle" Grid.Column="0" Text="Callback Reminders" Foreground="#F8FAFC" FontWeight="Bold" FontSize="14" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                <TextBlock Name="TxtMgrStatus" Grid.Column="1" Text="Ready" Foreground="#38BDF8" FontSize="11" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="0,0,10,0"/>
+                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
                     <Button Name="BtnMgrCopyAllExcel" Content="Copy All for Excel" Background="#1E3A8A" Foreground="#93C5FD" FontWeight="Bold" FontSize="11" Padding="8,4" BorderThickness="1" BorderBrush="#2563EB" Margin="0,0,8,0" Cursor="Hand"/>
-                    <Button Name="BtnMgrClose" Content="✕" Background="#334155" Foreground="White" FontWeight="Bold" FontSize="12" Width="24" Height="24" BorderThickness="0" Cursor="Hand"/>
+                    <Button Name="BtnMgrClose" Content="✕" Background="#DC2626" Foreground="White" FontWeight="Bold" FontSize="12" Width="26" Height="26" BorderThickness="0" Cursor="Hand" ToolTip="Close (Esc)"/>
                 </StackPanel>
             </Grid>
 
@@ -1916,33 +2233,33 @@ function Show-CallbackManager {
         }
     })
 
-    $txtStatus = $mgrWin.FindName("TxtMgrStatus")
-    $tbName = $mgrWin.FindName("TbName")
-    $tbPhone = $mgrWin.FindName("TbPhone")
-    $tbDate = $mgrWin.FindName("TbDate")
-    $tbTime = $mgrWin.FindName("TbTime")
-    $tbNotes = $mgrWin.FindName("TbNotes")
-    $container = $mgrWin.FindName("CallbacksContainer")
-
     # Set initial defaults
-    $tbDate.Text = (Get-Date).ToString("yyyy-MM-dd")
-    $tbTime.Text = (Get-Date).AddMinutes(30).ToString("hh:mm tt")
+    $tbD = $mgrWin.FindName("TbDate")
+    if ($tbD) { $tbD.Text = (Get-Date).ToString("yyyy-MM-dd") }
+    $tbT = $mgrWin.FindName("TbTime")
+    if ($tbT) { $tbT.Text = (Get-Date).AddMinutes(30).ToString("hh:mm tt") }
 
     # Quick set buttons
-    $mgrWin.FindName("BtnMgrToday").Add_Click({ $tbDate.Text = (Get-Date).ToString("yyyy-MM-dd") })
-    $mgrWin.FindName("BtnMgrTomorrow").Add_Click({ $tbDate.Text = (Get-Date).AddDays(1).ToString("yyyy-MM-dd") })
+    $mgrWin.FindName("BtnMgrToday").Add_Click({
+        $d = $script:cbManagerWindow.FindName("TbDate")
+        if ($d) { $d.Text = (Get-Date).ToString("yyyy-MM-dd") }
+    })
+    $mgrWin.FindName("BtnMgrTomorrow").Add_Click({
+        $d = $script:cbManagerWindow.FindName("TbDate")
+        if ($d) { $d.Text = (Get-Date).AddDays(1).ToString("yyyy-MM-dd") }
+    })
 
-    $mgrWin.FindName("BtnMgrM1h").Add_Click({ $tbTime.Text = Adjust-TimeString $tbTime.Text -60 })
-    $mgrWin.FindName("BtnMgrM30m").Add_Click({ $tbTime.Text = Adjust-TimeString $tbTime.Text -30 })
-    $mgrWin.FindName("BtnMgrM15m").Add_Click({ $tbTime.Text = Adjust-TimeString $tbTime.Text -15 })
-    $mgrWin.FindName("BtnMgrM10m").Add_Click({ $tbTime.Text = Adjust-TimeString $tbTime.Text -10 })
-    $mgrWin.FindName("BtnMgrM5m").Add_Click({ $tbTime.Text = Adjust-TimeString $tbTime.Text -5 })
+    $mgrWin.FindName("BtnMgrM1h").Add_Click({ $t = $script:cbManagerWindow.FindName("TbTime"); if ($t) { $t.Text = Adjust-TimeString $t.Text -60 } })
+    $mgrWin.FindName("BtnMgrM30m").Add_Click({ $t = $script:cbManagerWindow.FindName("TbTime"); if ($t) { $t.Text = Adjust-TimeString $t.Text -30 } })
+    $mgrWin.FindName("BtnMgrM15m").Add_Click({ $t = $script:cbManagerWindow.FindName("TbTime"); if ($t) { $t.Text = Adjust-TimeString $t.Text -15 } })
+    $mgrWin.FindName("BtnMgrM10m").Add_Click({ $t = $script:cbManagerWindow.FindName("TbTime"); if ($t) { $t.Text = Adjust-TimeString $t.Text -10 } })
+    $mgrWin.FindName("BtnMgrM5m").Add_Click({ $t = $script:cbManagerWindow.FindName("TbTime"); if ($t) { $t.Text = Adjust-TimeString $t.Text -5 } })
 
-    $mgrWin.FindName("BtnMgrP5m").Add_Click({ $tbTime.Text = Adjust-TimeString $tbTime.Text 5 })
-    $mgrWin.FindName("BtnMgrP10m").Add_Click({ $tbTime.Text = Adjust-TimeString $tbTime.Text 10 })
-    $mgrWin.FindName("BtnMgrP15m").Add_Click({ $tbTime.Text = Adjust-TimeString $tbTime.Text 15 })
-    $mgrWin.FindName("BtnMgrP30m").Add_Click({ $tbTime.Text = Adjust-TimeString $tbTime.Text 30 })
-    $mgrWin.FindName("BtnMgrP1h").Add_Click({ $tbTime.Text = Adjust-TimeString $tbTime.Text 60 })
+    $mgrWin.FindName("BtnMgrP5m").Add_Click({ $t = $script:cbManagerWindow.FindName("TbTime"); if ($t) { $t.Text = Adjust-TimeString $t.Text 5 } })
+    $mgrWin.FindName("BtnMgrP10m").Add_Click({ $t = $script:cbManagerWindow.FindName("TbTime"); if ($t) { $t.Text = Adjust-TimeString $t.Text 10 } })
+    $mgrWin.FindName("BtnMgrP15m").Add_Click({ $t = $script:cbManagerWindow.FindName("TbTime"); if ($t) { $t.Text = Adjust-TimeString $t.Text 15 } })
+    $mgrWin.FindName("BtnMgrP30m").Add_Click({ $t = $script:cbManagerWindow.FindName("TbTime"); if ($t) { $t.Text = Adjust-TimeString $t.Text 30 } })
+    $mgrWin.FindName("BtnMgrP1h").Add_Click({ $t = $script:cbManagerWindow.FindName("TbTime"); if ($t) { $t.Text = Adjust-TimeString $t.Text 60 } })
 
     # Close button
     $mgrWin.FindName("BtnMgrClose").Add_Click({ $mgrWin.Close() })
@@ -1950,308 +2267,39 @@ function Show-CallbackManager {
     # Filter state
     $script:currentFilter = "all"
 
-    # Refresh items in container
-    function Render-CallbackCards {
-        $container.Children.Clear()
-        $cbs = Get-CallbacksList
-        $nowEpoch = Get-NowEpochMs
-        $todayStr = (Get-Date).ToString("yyyy-MM-dd")
-
-        $filtered = @()
-        foreach ($c in $cbs) {
-            $isDue = ($c.status -eq "PENDING") -and (($c.dueEpoch -gt 0 -and $c.dueEpoch -le $nowEpoch) -or ($c.callbackDate -lt $todayStr))
-            if ($script:currentFilter -eq "all") {
-                $filtered += $c
-            } elseif ($script:currentFilter -eq "due" -and $isDue) {
-                $filtered += $c
-            } elseif ($script:currentFilter -eq "pending" -and $c.status -eq "PENDING" -and !$isDue) {
-                $filtered += $c
-            } elseif ($script:currentFilter -eq "done" -and $c.status -eq "COMPLETED") {
-                $filtered += $c
-            }
-        }
-
-        if ($filtered.Count -eq 0) {
-            $emptyTb = New-Object System.Windows.Controls.TextBlock
-            $emptyTb.Text = "No callbacks found in this view."
-            $emptyTb.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#64748B")
-            $emptyTb.Margin = [System.Windows.Thickness]::new(10)
-            $emptyTb.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
-            $container.Children.Add($emptyTb) | Out-Null
-            return
-        }
-
-        foreach ($c in $filtered) {
-            $isDue = ($c.status -eq "PENDING") -and (($c.dueEpoch -gt 0 -and $c.dueEpoch -le $nowEpoch) -or ($c.callbackDate -lt $todayStr))
-            $cardBorder = New-Object System.Windows.Controls.Border
-            $cardBorder.CornerRadius = [System.Windows.CornerRadius]::new(6)
-            $cardBorder.Padding = [System.Windows.Thickness]::new(8,6,8,6)
-            $cardBorder.Margin = [System.Windows.Thickness]::new(0,0,0,6)
-            $cardBorder.BorderThickness = [System.Windows.Thickness]::new(1)
-
-            $bc = [System.Windows.Media.BrushConverter]::new()
-            $curTheme = $script:state.Theme
-            if ($isDue) {
-                if ($curTheme -eq "light") {
-                    $cardBorder.Background = $bc.ConvertFromString("#FEF2F2")
-                    $cardBorder.BorderBrush = $bc.ConvertFromString("#F87171")
-                } elseif ($curTheme -eq "highvis") {
-                    $cardBorder.Background = $bc.ConvertFromString("#000000")
-                    $cardBorder.BorderBrush = $bc.ConvertFromString("#FF0000")
-                    $cardBorder.BorderThickness = [System.Windows.Thickness]::new(2)
-                } else {
-                    $cardBorder.Background = $bc.ConvertFromString("#450A0A")
-                    $cardBorder.BorderBrush = $bc.ConvertFromString("#EF4444")
-                }
-            } elseif ($c.status -eq "COMPLETED") {
-                if ($curTheme -eq "light") {
-                    $cardBorder.Background = $bc.ConvertFromString("#F0FDF4")
-                    $cardBorder.BorderBrush = $bc.ConvertFromString("#86EFAC")
-                } elseif ($curTheme -eq "highvis") {
-                    $cardBorder.Background = $bc.ConvertFromString("#000000")
-                    $cardBorder.BorderBrush = $bc.ConvertFromString("#00FF00")
-                    $cardBorder.BorderThickness = [System.Windows.Thickness]::new(2)
-                } else {
-                    $cardBorder.Background = $bc.ConvertFromString("#064E3B")
-                    $cardBorder.BorderBrush = $bc.ConvertFromString("#047857")
-                }
-            } else {
-                if ($curTheme -eq "light") {
-                    $cardBorder.Background = $bc.ConvertFromString("#FFFFFF")
-                    $cardBorder.BorderBrush = $bc.ConvertFromString("#CBD5E1")
-                } elseif ($curTheme -eq "highvis") {
-                    $cardBorder.Background = $bc.ConvertFromString("#000000")
-                    $cardBorder.BorderBrush = $bc.ConvertFromString("#FFFF00")
-                    $cardBorder.BorderThickness = [System.Windows.Thickness]::new(1.5)
-                } else {
-                    $cardBorder.Background = $bc.ConvertFromString("#0F172A")
-                    $cardBorder.BorderBrush = $bc.ConvertFromString("#334155")
-                }
-            }
-
-            $cardGrid = New-Object System.Windows.Controls.Grid
-            $cCol0 = New-Object System.Windows.Controls.ColumnDefinition
-            $cCol0.Width = New-Object System.Windows.GridLength(1, [System.Windows.GridUnitType]::Star)
-            $cCol1 = New-Object System.Windows.Controls.ColumnDefinition
-            $cCol1.Width = [System.Windows.GridLength]::Auto
-            $cardGrid.ColumnDefinitions.Add($cCol0)
-            $cardGrid.ColumnDefinitions.Add($cCol1)
-
-            # Left side details
-            $leftStack = New-Object System.Windows.Controls.StackPanel
-            $leftStack.Orientation = [System.Windows.Controls.Orientation]::Vertical
-
-            $topRow = New-Object System.Windows.Controls.StackPanel
-            $topRow.Orientation = [System.Windows.Controls.Orientation]::Horizontal
-
-            $statusBadge = New-Object System.Windows.Controls.TextBlock
-            if ($isDue) {
-                $statusBadge.Text = "[DUE NOW] "
-                $statusBadge.Foreground = if ($curTheme -eq "highvis") { $bc.ConvertFromString("#FF0000") } else { $bc.ConvertFromString("#EF4444") }
-                $statusBadge.FontWeight = [System.Windows.FontWeights]::Bold
-            } elseif ($c.status -eq "COMPLETED") {
-                $statusBadge.Text = "[DONE] "
-                $statusBadge.Foreground = if ($curTheme -eq "highvis") { $bc.ConvertFromString("#00FF00") } elseif ($curTheme -eq "light") { $bc.ConvertFromString("#16A34A") } else { $bc.ConvertFromString("#4ADE80") }
-                $statusBadge.FontWeight = [System.Windows.FontWeights]::Bold
-            } else {
-                $statusBadge.Text = "[SCHEDULED] "
-                $statusBadge.Foreground = if ($curTheme -eq "highvis") { $bc.ConvertFromString("#00FFFF") } elseif ($curTheme -eq "light") { $bc.ConvertFromString("#0284C7") } else { $bc.ConvertFromString("#38BDF8") }
-                $statusBadge.FontWeight = [System.Windows.FontWeights]::Bold
-            }
-            $statusBadge.FontSize = 10
-            $topRow.Children.Add($statusBadge) | Out-Null
-
-            $nameTb = New-Object System.Windows.Controls.TextBlock
-            $nameTb.Text = [string]$c.contactName + " - " + [string]$c.callbackDate + " at " + [string]$c.callbackTime
-            if ($curTheme -eq "light") {
-                $nameTb.Foreground = if ($isDue) { $bc.ConvertFromString("#991B1B") } elseif ($c.status -eq "COMPLETED") { $bc.ConvertFromString("#166534") } else { $bc.ConvertFromString("#0F172A") }
-            } elseif ($curTheme -eq "highvis") {
-                $nameTb.Foreground = $bc.ConvertFromString("#FFFF00")
-            } else {
-                $nameTb.Foreground = $bc.ConvertFromString("#F8FAFC")
-            }
-            $nameTb.FontWeight = [System.Windows.FontWeights]::Bold
-            $nameTb.FontSize = 12
-            $topRow.Children.Add($nameTb) | Out-Null
-
-            $leftStack.Children.Add($topRow) | Out-Null
-
-            $contactRow = New-Object System.Windows.Controls.TextBlock
-            $contactRow.Text = "Phone: " + [string]$c.phone
-            if ($curTheme -eq "light") {
-                $contactRow.Foreground = if ($isDue) { $bc.ConvertFromString("#B91C1C") } elseif ($c.status -eq "COMPLETED") { $bc.ConvertFromString("#15803D") } else { $bc.ConvertFromString("#0284C7") }
-            } elseif ($curTheme -eq "highvis") {
-                $contactRow.Foreground = $bc.ConvertFromString("#00FFFF")
-            } else {
-                $contactRow.Foreground = $bc.ConvertFromString("#93C5FD")
-            }
-            $contactRow.FontSize = 11
-            $contactRow.Margin = [System.Windows.Thickness]::new(0,2,0,2)
-            $leftStack.Children.Add($contactRow) | Out-Null
-
-            if ($c.notes) {
-                $notesTb = New-Object System.Windows.Controls.TextBlock
-                $notesTb.Text = "Note: " + [string]$c.notes
-                if ($curTheme -eq "light") {
-                    $notesTb.Foreground = $bc.ConvertFromString("#475569")
-                } elseif ($curTheme -eq "highvis") {
-                    $notesTb.Foreground = $bc.ConvertFromString("#FFFFFF")
-                } else {
-                    $notesTb.Foreground = $bc.ConvertFromString("#CBD5E1")
-                }
-                $notesTb.FontSize = 10
-                $notesTb.TextWrapping = [System.Windows.TextWrapping]::Wrap
-                $leftStack.Children.Add($notesTb) | Out-Null
-            }
-
-            [System.Windows.Controls.Grid]::SetColumn($leftStack, 0)
-            $cardGrid.Children.Add($leftStack) | Out-Null
-
-            # Right side actions
-            $rightStack = New-Object System.Windows.Controls.StackPanel
-            $rightStack.Orientation = [System.Windows.Controls.Orientation]::Horizontal
-            $rightStack.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
-
-            # Copy Phone Button
-            $btnCpPhone = New-Object System.Windows.Controls.Button
-            $btnCpPhone.Content = "Phone"
-            $btnCpPhone.Background = $bc.ConvertFromString("#0284C7")
-            $btnCpPhone.Foreground = $bc.ConvertFromString("#FFFFFF")
-            $btnCpPhone.FontWeight = [System.Windows.FontWeights]::Bold
-            $btnCpPhone.FontSize = 10
-            $btnCpPhone.Padding = [System.Windows.Thickness]::new(6,4,6,4)
-            $btnCpPhone.Margin = [System.Windows.Thickness]::new(0,0,4,0)
-            $btnCpPhone.Cursor = [System.Windows.Input.Cursors]::Hand
-            $btnCpPhone.ToolTip = "Copy phone to clipboard for Telus"
-            $itemPhone = [string]$c.phone
-            $btnCpPhone.Add_Click({
-                [System.Windows.Clipboard]::SetText($itemPhone)
-                $txtStatus.Text = "Copied phone: $itemPhone"
-            }.GetNewClosure())
-            $rightStack.Children.Add($btnCpPhone) | Out-Null
-
-            # Copy Details Button
-            $btnCpDetails = New-Object System.Windows.Controls.Button
-            $btnCpDetails.Content = "Text"
-            if ($curTheme -eq "light") {
-                $btnCpDetails.Background = $bc.ConvertFromString("#E2E8F0")
-                $btnCpDetails.Foreground = $bc.ConvertFromString("#334155")
-            } elseif ($curTheme -eq "highvis") {
-                $btnCpDetails.Background = $bc.ConvertFromString("#000000")
-                $btnCpDetails.Foreground = $bc.ConvertFromString("#FFFF00")
-                $btnCpDetails.BorderBrush = $bc.ConvertFromString("#FFFF00")
-            } else {
-                $btnCpDetails.Background = $bc.ConvertFromString("#334155")
-                $btnCpDetails.Foreground = $bc.ConvertFromString("#CBD5E1")
-            }
-            $btnCpDetails.FontSize = 10
-            $btnCpDetails.Padding = [System.Windows.Thickness]::new(6,4,6,4)
-            $btnCpDetails.Margin = [System.Windows.Thickness]::new(0,0,4,0)
-            $btnCpDetails.Cursor = [System.Windows.Input.Cursors]::Hand
-            $btnCpDetails.ToolTip = "Copy full summary for email/SMS"
-            $itemDetails = "Contact: " + [string]$c.contactName + "`r`nPhone: " + [string]$c.phone + "`r`nScheduled: " + [string]$c.callbackDate + " " + [string]$c.callbackTime + "`r`nNotes: " + [string]$c.notes
-            $btnCpDetails.Add_Click({
-                [System.Windows.Clipboard]::SetText($itemDetails)
-                $txtStatus.Text = "Copied details for " + [string]$c.contactName
-            }.GetNewClosure())
-            $rightStack.Children.Add($btnCpDetails) | Out-Null
-
-            # Snooze +15m
-            $itemId = [string]$c.id
-            if ($c.status -eq "PENDING") {
-                $btnSnooze = New-Object System.Windows.Controls.Button
-                $btnSnooze.Content = "+15m"
-                $btnSnooze.Background = $bc.ConvertFromString("#D97706")
-                $btnSnooze.Foreground = $bc.ConvertFromString("#FFFFFF")
-                $btnSnooze.FontSize = 10
-                $btnSnooze.Padding = [System.Windows.Thickness]::new(6,4,6,4)
-                $btnSnooze.Margin = [System.Windows.Thickness]::new(0,0,4,0)
-                $btnSnooze.Cursor = [System.Windows.Input.Cursors]::Hand
-                $btnSnooze.Add_Click({
-                    Snooze-Callback $itemId 15
-                    $txtStatus.Text = "Snoozed 15 minutes"
-                    Render-CallbackCards
-                }.GetNewClosure())
-                $rightStack.Children.Add($btnSnooze) | Out-Null
-
-                # Mark Done
-                $btnDone = New-Object System.Windows.Controls.Button
-                $btnDone.Content = "Done"
-                $btnDone.Background = $bc.ConvertFromString("#16A34A")
-                $btnDone.Foreground = $bc.ConvertFromString("#FFFFFF")
-                $btnDone.FontWeight = [System.Windows.FontWeights]::Bold
-                $btnDone.FontSize = 10
-                $btnDone.Padding = [System.Windows.Thickness]::new(6,4,6,4)
-                $btnDone.Margin = [System.Windows.Thickness]::new(0,0,4,0)
-                $btnDone.Cursor = [System.Windows.Input.Cursors]::Hand
-                $btnDone.Add_Click({
-                    Complete-Callback $itemId
-                    $txtStatus.Text = "Marked completed!"
-                    Render-CallbackCards
-                }.GetNewClosure())
-                $rightStack.Children.Add($btnDone) | Out-Null
-            }
-
-            # Delete button
-            $btnDel = New-Object System.Windows.Controls.Button
-            $btnDel.Content = "Del"
-            if ($curTheme -eq "light") {
-                $btnDel.Background = $bc.ConvertFromString("#E2E8F0")
-                $btnDel.Foreground = $bc.ConvertFromString("#64748B")
-            } elseif ($curTheme -eq "highvis") {
-                $btnDel.Background = $bc.ConvertFromString("#000000")
-                $btnDel.Foreground = $bc.ConvertFromString("#FF0000")
-                $btnDel.BorderBrush = $bc.ConvertFromString("#FF0000")
-            } else {
-                $btnDel.Background = $bc.ConvertFromString("#475569")
-                $btnDel.Foreground = $bc.ConvertFromString("#FFFFFF")
-            }
-            $btnDel.FontSize = 10
-            $btnDel.Padding = [System.Windows.Thickness]::new(5,4,5,4)
-            $btnDel.Cursor = [System.Windows.Input.Cursors]::Hand
-            $btnDel.ToolTip = "Delete callback"
-            $btnDel.Add_Click({
-                Delete-Callback $itemId
-                $txtStatus.Text = "Deleted callback"
-                Render-CallbackCards
-            }.GetNewClosure())
-            $rightStack.Children.Add($btnDel) | Out-Null
-
-            [System.Windows.Controls.Grid]::SetColumn($rightStack, 1)
-            $cardGrid.Children.Add($rightStack) | Out-Null
-
-            $cardBorder.Child = $cardGrid
-            $container.Children.Add($cardBorder) | Out-Null
-        }
-    }
-
     # Filter tab events
-    $mgrWin.FindName("BtnFilterAll").Add_Click({ $script:currentFilter = "all"; Apply-CallbackManagerFilterStyles $mgrWin $script:state.Theme; Render-CallbackCards })
-    $mgrWin.FindName("BtnFilterDue").Add_Click({ $script:currentFilter = "due"; Apply-CallbackManagerFilterStyles $mgrWin $script:state.Theme; Render-CallbackCards })
-    $mgrWin.FindName("BtnFilterPending").Add_Click({ $script:currentFilter = "pending"; Apply-CallbackManagerFilterStyles $mgrWin $script:state.Theme; Render-CallbackCards })
-    $mgrWin.FindName("BtnFilterDone").Add_Click({ $script:currentFilter = "done"; Apply-CallbackManagerFilterStyles $mgrWin $script:state.Theme; Render-CallbackCards })
+    $mgrWin.FindName("BtnFilterAll").Add_Click({ $script:currentFilter = "all"; Apply-CallbackManagerFilterStyles $script:cbManagerWindow $script:state.Theme; Render-CallbackManagerCards })
+    $mgrWin.FindName("BtnFilterDue").Add_Click({ $script:currentFilter = "due"; Apply-CallbackManagerFilterStyles $script:cbManagerWindow $script:state.Theme; Render-CallbackManagerCards })
+    $mgrWin.FindName("BtnFilterPending").Add_Click({ $script:currentFilter = "pending"; Apply-CallbackManagerFilterStyles $script:cbManagerWindow $script:state.Theme; Render-CallbackManagerCards })
+    $mgrWin.FindName("BtnFilterDone").Add_Click({ $script:currentFilter = "done"; Apply-CallbackManagerFilterStyles $script:cbManagerWindow $script:state.Theme; Render-CallbackManagerCards })
 
     # Add Callback Event
     $mgrWin.FindName("BtnAddCallback").Add_Click({
-        $name = $tbName.Text.Trim()
-        $phone = $tbPhone.Text.Trim()
+        $tN = $script:cbManagerWindow.FindName("TbName")
+        $tP = $script:cbManagerWindow.FindName("TbPhone")
+        $tD = $script:cbManagerWindow.FindName("TbDate")
+        $tT = $script:cbManagerWindow.FindName("TbTime")
+        $tNt = $script:cbManagerWindow.FindName("TbNotes")
+
+        $name = if ($tN -and $tN.Text) { $tN.Text.Trim() } else { "" }
+        $phone = if ($tP -and $tP.Text) { $tP.Text.Trim() } else { "" }
         $email = ""
-        $date = $tbDate.Text.Trim()
-        $time = $tbTime.Text.Trim()
-        $notes = $tbNotes.Text.Trim()
+        $date = if ($tD -and $tD.Text) { $tD.Text.Trim() } else { (Get-Date).ToString("yyyy-MM-dd") }
+        $time = if ($tT -and $tT.Text) { $tT.Text.Trim() } else { (Get-Date).AddMinutes(30).ToString("hh:mm tt") }
+        $notes = if ($tNt -and $tNt.Text) { $tNt.Text.Trim() } else { "" }
 
         if ([string]::IsNullOrWhiteSpace($name) -and [string]::IsNullOrWhiteSpace($phone)) {
-            $txtStatus.Text = "Please enter at least Name or Phone."
+            Set-MgrStatus "Please enter at least Name or Phone."
             return
         }
 
         Add-CallbackItem $name $phone $email $date $time $notes
-        $tbName.Text = ""
-        $tbPhone.Text = ""
-        $tbNotes.Text = ""
-        $tbTime.Text = (Get-Date).AddMinutes(30).ToString("hh:mm tt")
-        $txtStatus.Text = "Callback saved for " + $name + "!"
-        Render-CallbackCards
+        if ($tN) { $tN.Text = "" }
+        if ($tP) { $tP.Text = "" }
+        if ($tNt) { $tNt.Text = "" }
+        if ($tT) { $tT.Text = (Get-Date).AddMinutes(30).ToString("hh:mm tt") }
+        Set-MgrStatus "Callback saved for $name!"
+        Render-CallbackManagerCards
     })
 
     # Copy All for Excel (TSV)
@@ -2263,21 +2311,16 @@ function Show-CallbackManager {
             $lines += "$($c.contactName)`t$($c.phone)`t$($c.email)`t$($c.callbackDate)`t$($c.callbackTime)`t$($c.notes)`t$($c.status)"
         }
         $tsv = $lines -join "`r`n"
-        [System.Windows.Clipboard]::SetText($tsv)
-        $txtStatus.Text = "All callbacks copied in Excel format!"
+        Set-ClipboardSafe $tsv
+        Set-MgrStatus "All callbacks copied in Excel format!"
     })
 
-    $script:RenderCallbackCardsAction = {
-        Apply-CallbackManagerTheme $mgrWin $script:state.Theme
-        Render-CallbackCards
-    }
     $mgrWin.Add_Closed({
         $script:cbManagerWindow = $null
-        $script:RenderCallbackCardsAction = $null
     })
 
     Apply-CallbackManagerTheme $mgrWin $script:state.Theme
-    Render-CallbackCards
+    Render-CallbackManagerCards
     $mgrWin.Show()
 }
 

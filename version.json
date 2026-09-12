@@ -1,6 +1,6 @@
 {
-  "version": "1.5.2",
-  "build": "2026.09.12-rev3",
+  "version": "1.5.3",
+  "build": "2026.09.12-rev4",
   "releaseDate": "2026-09-12",
-  "notes": "Fixed in-app update process restart (resolved null error and duplicate toolbar opening) and added single-instance protection."
+  "notes": "Fixed callback reminder modal buttons (time adjusters, delete, phone/sms copy, close [X] overlap) and quick appointment steppers."
 }
