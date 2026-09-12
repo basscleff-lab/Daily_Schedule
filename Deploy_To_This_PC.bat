@@ -10,10 +10,43 @@ echo.
 
 set "TARGET_DIR=C:\Apps\Daily_Schedule"
 set "SOURCE_DIR=%~dp0"
-
-:: Strip trailing backslash from SOURCE_DIR if present
 if "%SOURCE_DIR:~-1%"=="\" set "SOURCE_DIR=%SOURCE_DIR:~0,-1%"
 
+if "%1"=="--github" goto do_github
+if "%1"=="--update" goto do_github
+
+echo Deployment Source:
+echo   [1] Install/Deploy from this folder (Default)
+echo   [2] Pull latest release directly from GitHub (No Git required)
+echo.
+set "MODE=1"
+set /p "MODE=Select option (1 or 2, default is 1): "
+if "%MODE%"=="2" goto do_github
+goto start_deploy
+
+:do_github
+echo.
+echo Connecting to GitHub repository (basscleff-lab/Daily_Schedule)...
+powershell.exe -NoProfile -ExecutionPolicy Bypass -Command ^
+    "$repoZip = 'https://github.com/basscleff-lab/Daily_Schedule/archive/refs/heads/main.zip';" ^
+    "$tempZip = Join-Path $env:TEMP 'daily_sched_update.zip';" ^
+    "$tempExt = Join-Path $env:TEMP 'daily_sched_update_ext';" ^
+    "Remove-Item $tempZip, $tempExt -Recurse -Force -ErrorAction SilentlyContinue;" ^
+    "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12;" ^
+    "Invoke-WebRequest -Uri $repoZip -OutFile $tempZip -UseBasicParsing;" ^
+    "Expand-Archive -Path $tempZip -DestinationPath $tempExt -Force;" ^
+    "if (Test-Path (Join-Path $tempExt 'Daily_Schedule-main')) { exit 0 } else { exit 1 }"
+if %ERRORLEVEL% neq 0 (
+    color 0C
+    echo [ERROR] Could not download update from GitHub. Please check your internet connection.
+    pause
+    exit /b 1
+)
+set "SOURCE_DIR=%TEMP%\daily_sched_update_ext\Daily_Schedule-main"
+echo       - Downloaded latest release from GitHub successfully!
+echo.
+
+:start_deploy
 echo [1/5] Checking System Compatibility...
 powershell.exe -Command "if ($PSVersionTable.PSVersion.Major -ge 5) { exit 0 } else { exit 1 }"
 if %ERRORLEVEL% neq 0 (
