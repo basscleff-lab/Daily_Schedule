@@ -1,6 +1,6 @@
 {
-  "version": "1.5.1",
-  "build": "2026.09.12-rev2",
+  "version": "1.5.2",
+  "build": "2026.09.12-rev3",
   "releaseDate": "2026-09-12",
-  "notes": "Fixed callback reminder modal freeze bug: non-blocking display, draggable popups, explicit close button, and Escape key dismissal."
+  "notes": "Fixed in-app update process restart (resolved null error and duplicate toolbar opening) and added single-instance protection."
 }

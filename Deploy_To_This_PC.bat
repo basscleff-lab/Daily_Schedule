@@ -106,7 +106,7 @@ if exist "%TARGET_DIR%\data\sales_reps.json" (
 )
 
 :: Copy Core Files (excluding git, tests, and temporary storage)
-robocopy "%SOURCE_DIR%" "%TARGET_DIR%" floating_toolbar.ps1 Launch_Floating_Toolbar.bat Verify_PC_Compatibility.bat index.html app.js styles.css popup.html popup.js popup.css README.md REQUIREMENTS.md /IS /IT /nfl /ndl /njh /njs
+robocopy "%SOURCE_DIR%" "%TARGET_DIR%" floating_toolbar.ps1 Launch_Floating_Toolbar.bat Verify_PC_Compatibility.bat version.json index.html app.js styles.css popup.html popup.js popup.css README.md REQUIREMENTS.md /IS /IT /nfl /ndl /njh /njs
 
 :: Copy initial data files if target doesn't have them yet (NEVER overwrite existing data)
 if not exist "%TARGET_DIR%\data\shifts.json" (
@@ -141,23 +141,23 @@ echo [4/5] Creating Desktop Shortcuts...
 powershell.exe -NoProfile -ExecutionPolicy Bypass -Command ^
     "$ws = New-Object -ComObject WScript.Shell;" ^
     "$desktop = [Environment]::GetFolderPath('Desktop');" ^
-    "$shortcutPath = Join-Path $desktop 'Sabrina Work Tracker.lnk';" ^
+    "$shortcutPath = Join-Path $desktop 'Daily Work Tracker.lnk';" ^
     "$sc = $ws.CreateShortcut($shortcutPath);" ^
     "$sc.TargetPath = '%TARGET_DIR%\Launch_Floating_Toolbar.bat';" ^
     "$sc.WorkingDirectory = '%TARGET_DIR%';" ^
     "$sc.Description = 'Daily Floating Work Tracker';" ^
     "$sc.IconLocation = 'shell32.dll,265';" ^
     "$sc.Save();" ^
-    "$reportPath = Join-Path $desktop 'Sabrina Invoices & Reports.lnk';" ^
+    "$reportPath = Join-Path $desktop 'Work Hub Invoices & Reports.lnk';" ^
     "$rc = $ws.CreateShortcut($reportPath);" ^
     "$rc.TargetPath = '%TARGET_DIR%\index.html';" ^
     "$rc.WorkingDirectory = '%TARGET_DIR%';" ^
-    "$rc.Description = 'Sabrina Shift History and Invoices';" ^
+    "$rc.Description = 'Daily Shift History and Invoices';" ^
     "$rc.IconLocation = 'shell32.dll,264';" ^
     "$rc.Save();"
 
-echo       - Created "Sabrina Work Tracker" shortcut on Desktop.
-echo       - Created "Sabrina Invoices & Reports" shortcut on Desktop.
+echo       - Created "Daily Work Tracker" shortcut on Desktop.
+echo       - Created "Work Hub Invoices & Reports" shortcut on Desktop.
 echo.
 
 echo [5/5] Verification Complete!
@@ -167,7 +167,7 @@ echo                     INSTALLATION SUCCESSFUL!
 echo ======================================================================
 echo.
 echo Application location: %TARGET_DIR%
-echo Shortcuts are now on Sabrina's Desktop.
+echo Shortcuts are now on your Desktop.
 echo.
 set /p "LAUNCH=Would you like to launch the Floating Toolbar now? (Y/N): "
 if /i "%LAUNCH%"=="Y" (

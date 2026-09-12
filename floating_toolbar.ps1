@@ -1,5 +1,15 @@
 param([switch]$Test, [string]$Screenshot, [string]$Theme = "dark", [string]$ModalScreenshot = "", [string]$ModalType = "callback")
 
+# Single-Instance Enforcement (Ensures only one floating toolbar can run at a time)
+if (!$Test) {
+    $script:isNewInstance = $false
+    $script:appMutex = New-Object System.Threading.Mutex($true, "Global\DailySchedule_WorkTracker_FloatingToolbar_Mutex", [ref]$script:isNewInstance)
+    if (!$script:isNewInstance) {
+        # Another instance of the toolbar is already active on this PC
+        exit 0
+    }
+}
+
 Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase
 
 $script:dataDir = Join-Path $PSScriptRoot "data"
@@ -15,8 +25,8 @@ $script:historyDir = Join-Path $script:dataDir "history"
 if (!(Test-Path $script:historyDir)) { New-Item -ItemType Directory -Path $script:historyDir -Force | Out-Null }
 
 $script:versionFile = Join-Path $PSScriptRoot "version.json"
-$script:appVersion = "1.5.1"
-$script:appBuild = "2026.09.12-rev2"
+$script:appVersion = "1.5.2"
+$script:appBuild = "2026.09.12-rev3"
 if (Test-Path $script:versionFile) {
     try {
         $vData = Get-Content $script:versionFile -Raw | ConvertFrom-Json
@@ -117,7 +127,7 @@ if ($script:state.Status -eq "OFFLINE") {
 [xml]$xaml = @"
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Sabrina Transport Bar"
+        Title="Work Hub Transport Bar"
         Width="600" Height="165"
         WindowStyle="None"
         AllowsTransparency="True"
@@ -320,6 +330,13 @@ if ($DragHandleCenter) {
 # Window controls
 $BtnMin.Add_Click({ $window.WindowState = [System.Windows.WindowState]::Minimized })
 $BtnClose.Add_Click({ $window.Close() })
+$window.Add_Closed({
+    if ($script:appMutex) {
+        try { $script:appMutex.ReleaseMutex() } catch {}
+        try { $script:appMutex.Dispose() } catch {}
+        $script:appMutex = $null
+    }
+})
 
 # Advanced View Button: Launches full dashboard for invoices, detailed timesheets & Telus tools
 $BtnAdvanced.Add_Click({
@@ -391,9 +408,19 @@ function Update-AppFromGitHub {
 
             [System.Windows.MessageBox]::Show("App updated successfully to version $($remoteVer)!`n`nAll your work logs and shift hours are 100% safe.`n`nThe toolbar will now reload with the new features.", "Update Complete", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information) | Out-Null
 
-            # Restart toolbar process cleanly
-            Start-Process powershell.exe -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$PSScriptRoot\floating_toolbar.ps1`""
-            [System.Windows.Application]::Current.Shutdown()
+            # Release single-instance mutex so new process can launch immediately
+            if ($script:appMutex) {
+                try { $script:appMutex.ReleaseMutex() } catch {}
+                try { $script:appMutex.Dispose() } catch {}
+                $script:appMutex = $null
+            }
+
+            # Restart toolbar process cleanly and terminate current instance
+            Start-Process powershell.exe -WindowStyle Hidden -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$PSScriptRoot\floating_toolbar.ps1`""
+            if ($window) {
+                try { $window.Close() } catch {}
+            }
+            [System.Environment]::Exit(0)
         } else {
             [System.Windows.MessageBox]::Show("Could not unpack GitHub update files.", "Update Error", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Warning) | Out-Null
             if ($BtnUpdate) {
