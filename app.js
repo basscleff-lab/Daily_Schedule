@@ -39,8 +39,8 @@
   // --- Application State ---
   let state = {
     version: '1.5.0',
-    build: '2026.09.11-rev2',
-    releaseDate: '2026-09-11',
+    build: '2026.09.12-rev1',
+    releaseDate: '2026-09-12',
     settings: {
       contractorName: 'Contractor',
       clientName: 'Client Company',
@@ -1353,6 +1353,7 @@
   function backupJSON() {
     const exportData = {
       version: state.version || '1.5.0',
+      build: state.build || '2026.09.12-rev1',
       exportedAt: new Date().toISOString(),
       settings: state.settings,
       shifts: state.shifts,
@@ -1365,7 +1366,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.setAttribute('href', url);
-    link.setAttribute('download', `Sabrina_Tracker_Backup_${formatDateKey(getTorontoNow())}.json`);
+    link.setAttribute('download', `Work_Tracker_Backup_${formatDateKey(getTorontoNow())}.json`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -1467,6 +1468,8 @@
         id: 'snap_' + Date.now(),
         timestamp: Date.now(),
         label: label,
+        version: state.version || '1.5.0',
+        build: state.build || '2026.09.12-rev1',
         formattedTime: format12HourTime(Date.now()),
         formattedDate: formatDateKey(getTorontoNow()),
         shiftsCount: (state.shifts || []).length,

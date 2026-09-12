@@ -16,7 +16,7 @@ if (!(Test-Path $script:historyDir)) { New-Item -ItemType Directory -Path $scrip
 
 $script:versionFile = Join-Path $PSScriptRoot "version.json"
 $script:appVersion = "1.5.0"
-$script:appBuild = "2026.09.11-rev2"
+$script:appBuild = "2026.09.12-rev1"
 if (Test-Path $script:versionFile) {
     try {
         $vData = Get-Content $script:versionFile -Raw | ConvertFrom-Json
@@ -648,6 +648,7 @@ function Save-5MinSnapshot {
             timestamp = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
             dateStr = (Get-Date).ToString("yyyy-MM-dd hh:mm tt")
             version = $script:appVersion
+            build = $script:appBuild
             shifts = $shifts
             callbacks = $cbs
             calls = $calls
@@ -2444,7 +2445,7 @@ $timer.Add_Tick({
 # Initial setup
 Apply-Theme $Theme
 Update-UIState
-$window.Title = "Sabrina Transport Bar v$($script:appVersion)"
+$window.Title = "Work Tracker v$($script:appVersion) (Build $($script:appBuild))"
 $TxtClock.Text = (Get-Date).ToString("hh:mm tt")
 $TxtSessionDigits.Text = Format-Stopwatch (Get-ActiveSeconds)
 $TxtTodayDigits.Text = Format-HoursMins (Get-TodayTotalSeconds)
