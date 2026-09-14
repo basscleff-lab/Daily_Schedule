@@ -79,6 +79,7 @@ $script:state = @{
     TodayAppts = 0
     TodayDate = (Get-Date).ToString("yyyy-MM-dd")
     Theme = "dark"
+    UpdatedAt = 0
 }
 
 # Load saved session if exists
@@ -93,6 +94,7 @@ if (Test-Path $script:sessionFile) {
             $script:state.LastActivitySwitchTime = $saved.LastActivitySwitchTime
             $script:state.CurrentActivity = $saved.CurrentActivity
             $script:state.TodayAppts = $saved.TodayAppts
+            if ($saved.UpdatedAt) { $script:state.UpdatedAt = [int64]$saved.UpdatedAt }
             if ($saved.ActivityMap) {
                 $saved.ActivityMap.psobject.properties | ForEach-Object {
                     $script:state.ActivityMap[$_.Name] = $_.Value
@@ -2406,6 +2408,7 @@ function Show-CallbackManager {
 
 # Session state saver
 function Save-SessionState {
+    $script:state.UpdatedAt = Get-NowEpochMs
     $json = $script:state | ConvertTo-Json -Depth 4
     Set-Content -Path $script:sessionFile -Value $json -Force
     Export-LocalDataJs

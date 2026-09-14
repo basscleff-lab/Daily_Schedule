@@ -261,9 +261,21 @@
           state.shifts = mergedShifts;
         }
 
-        // 2. Reconcile Today's Appts
-        if (window.SABRINA_LOCAL_DATA.activeSession && typeof window.SABRINA_LOCAL_DATA.activeSession.TodayAppts === 'number') {
-          state.todayAppts = Math.max(state.todayAppts || 0, window.SABRINA_LOCAL_DATA.activeSession.TodayAppts);
+        // 2. Reconcile Active Session & Today's Appts
+        if (window.SABRINA_LOCAL_DATA.activeSession) {
+          const tbSession = window.SABRINA_LOCAL_DATA.activeSession;
+          const tbDate = tbSession.TodayDate || '';
+          const todayKey = formatDateKey(getTorontoNow());
+          if (tbDate === todayKey) {
+            if (typeof tbSession.TodayAppts === 'number') {
+              state.todayAppts = Math.max(state.todayAppts || 0, tbSession.TodayAppts);
+            }
+            const tbUpdated = tbSession.UpdatedAt || 0;
+            const localUpdated = state.activeSession?.updatedAt || 0;
+            if (tbUpdated > localUpdated) {
+              state.activeSession = convertToolbarToDashboardSession(tbSession);
+            }
+          }
         }
 
         // 3. Reconcile Callbacks (Bidirectional status, notes, times & deletes)
@@ -366,6 +378,92 @@
   }
 
   // --- Direct File System Access API Bridge ---
+
+  function convertDashboardToToolbarSession(activeSession, todayAppts, theme) {
+    const todayKey = formatDateKey(getTorontoNow());
+    if (!activeSession || activeSession.status === 'OFFLINE') {
+      return {
+        Status: 'OFFLINE',
+        StartTime: 0,
+        PauseStartTime: 0,
+        TotalPausedMs: 0,
+        LastActivitySwitchTime: 0,
+        CurrentActivity: 'off_phone_work',
+        ActivityMap: {
+          inbound_call: 0,
+          outbound_call: 0,
+          text_sms: 0,
+          email_in: 0,
+          off_phone_work: 0
+        },
+        EventCounts: {
+          inbound_call: 0,
+          outbound_call: 0,
+          text_sms: 0,
+          email_in: 0,
+          off_phone_work: 0
+        },
+        Events: [],
+        TodayAppts: todayAppts || 0,
+        TodayDate: todayKey,
+        Theme: theme || 'dark',
+        UpdatedAt: Date.now()
+      };
+    }
+
+    const actMap = activeSession.activityTimeMap || {};
+    return {
+      Status: activeSession.status || 'RUNNING',
+      StartTime: activeSession.startTime || Date.now(),
+      PauseStartTime: activeSession.pauseStartTime || 0,
+      TotalPausedMs: activeSession.totalPausedMs || 0,
+      LastActivitySwitchTime: activeSession.lastActivitySwitchTime || activeSession.startTime || Date.now(),
+      CurrentActivity: activeSession.currentActivity || 'off_phone_work',
+      ActivityMap: {
+        inbound_call: actMap.inbound_call || 0,
+        outbound_call: actMap.outbound_call || 0,
+        text_sms: actMap.text_sms || 0,
+        email_in: (actMap.email_in || 0) + (actMap.email_out || 0),
+        off_phone_work: actMap.off_phone_work || 0
+      },
+      EventCounts: {
+        inbound_call: 0,
+        outbound_call: 0,
+        text_sms: 0,
+        email_in: 0,
+        off_phone_work: 0
+      },
+      Events: [],
+      TodayAppts: todayAppts || 0,
+      TodayDate: todayKey,
+      Theme: theme || 'dark',
+      UpdatedAt: activeSession.updatedAt || Date.now()
+    };
+  }
+
+  function convertToolbarToDashboardSession(tbSession) {
+    if (!tbSession || tbSession.Status === 'OFFLINE' || !tbSession.StartTime) {
+      return null;
+    }
+    const tbMap = tbSession.ActivityMap || {};
+    return {
+      startTime: tbSession.StartTime,
+      status: tbSession.Status || 'RUNNING',
+      pauseStartTime: tbSession.PauseStartTime || null,
+      totalPausedMs: tbSession.TotalPausedMs || 0,
+      lastActivitySwitchTime: tbSession.LastActivitySwitchTime || tbSession.StartTime,
+      currentActivity: tbSession.CurrentActivity || 'off_phone_work',
+      activityTimeMap: {
+        inbound_call: tbMap.inbound_call || 0,
+        outbound_call: tbMap.outbound_call || 0,
+        text_sms: tbMap.text_sms || 0,
+        email_in: tbMap.email_in || 0,
+        email_out: 0,
+        off_phone_work: tbMap.off_phone_work || 0
+      },
+      updatedAt: tbSession.UpdatedAt || Date.now()
+    };
+  }
 
   async function readDiskJsonFile(fileName) {
     if (!diskDirectoryHandle) return null;
@@ -520,7 +618,21 @@
         });
       }
 
-      // 6. Write reconciled data back to disk files
+      // 6. Read and reconcile disk Active Session
+      const diskSession = await readDiskJsonFile('active_session.json');
+      const todayKey = formatDateKey(getTorontoNow());
+      if (diskSession && diskSession.TodayDate === todayKey) {
+        if (typeof diskSession.TodayAppts === 'number') {
+          state.todayAppts = Math.max(state.todayAppts || 0, diskSession.TodayAppts);
+        }
+        const diskUpdated = diskSession.UpdatedAt || 0;
+        const localUpdated = state.activeSession?.updatedAt || 0;
+        if (diskUpdated > localUpdated) {
+          state.activeSession = convertToolbarToDashboardSession(diskSession);
+        }
+      }
+
+      // 7. Write reconciled data back to disk files
       const writeFile = async (fileName, dataObj, isJs = false) => {
         const fileHandle = await diskDirectoryHandle.getFileHandle(fileName, { create: true });
         const writable = await fileHandle.createWritable();
@@ -535,12 +647,16 @@
       await writeFile('sales_reps.json', state.salesReps || DEFAULT_SALES_REPS);
       await writeFile('deleted_ids.json', state.deletedIds || {});
 
-      const jsContent = `window.SABRINA_LOCAL_DATA = { version: "${state.version}", build: "${state.build}", shifts: ${JSON.stringify(state.shifts || [])}, activeSession: ${JSON.stringify(state.activeSession)}, callbacks: ${JSON.stringify(state.callbacks || [])}, calls: ${JSON.stringify(state.calls || [])}, salesReps: ${JSON.stringify(state.salesReps || DEFAULT_SALES_REPS)}, deletedIds: ${JSON.stringify(state.deletedIds || {})}, history: ${JSON.stringify(state.snapshots.slice(0, 12))}, theme: "${state.theme || 'dark'}" };`;
+      const tbSessionToSave = convertDashboardToToolbarSession(state.activeSession, state.todayAppts, state.theme);
+      await writeFile('active_session.json', tbSessionToSave);
+
+      const jsContent = `window.SABRINA_LOCAL_DATA = { version: "${state.version}", build: "${state.build}", shifts: ${JSON.stringify(state.shifts || [])}, activeSession: ${JSON.stringify(tbSessionToSave)}, callbacks: ${JSON.stringify(state.callbacks || [])}, calls: ${JSON.stringify(state.calls || [])}, salesReps: ${JSON.stringify(state.salesReps || DEFAULT_SALES_REPS)}, deletedIds: ${JSON.stringify(state.deletedIds || {})}, history: ${JSON.stringify(state.snapshots.slice(0, 12))}, theme: "${state.theme || 'dark'}" };`;
       await writeFile('shifts_data.js', jsContent, true);
 
       // Keep localStorage in sync with reconciled data
       try {
         localStorage.setItem(STORAGE_KEYS.SHIFTS, JSON.stringify(state.shifts));
+        localStorage.setItem(STORAGE_KEYS.ACTIVE_SESSION, JSON.stringify(state.activeSession));
         localStorage.setItem(STORAGE_KEYS.CALLBACKS, JSON.stringify(state.callbacks));
         localStorage.setItem(STORAGE_KEYS.CALLS, JSON.stringify(state.calls));
         localStorage.setItem(STORAGE_KEYS.SALES_REPS, JSON.stringify(state.salesReps));
@@ -591,7 +707,8 @@
           email_in: 0,
           email_out: 0,
           off_phone_work: 0
-        }
+        },
+        updatedAt: now
       };
     } else if (state.activeSession.status === 'PAUSED') {
       // Resume from paused
@@ -600,6 +717,7 @@
       state.activeSession.pauseStartTime = null;
       state.activeSession.status = 'RUNNING';
       state.activeSession.lastActivitySwitchTime = now;
+      state.activeSession.updatedAt = now;
     }
     persistState();
     updateUI();
@@ -614,6 +732,7 @@
 
     state.activeSession.status = 'PAUSED';
     state.activeSession.pauseStartTime = now;
+    state.activeSession.updatedAt = now;
     persistState();
     updateUI();
   }
@@ -689,6 +808,7 @@
 
     state.activeSession.currentActivity = newActivityKey;
     state.activeSession.lastActivitySwitchTime = now;
+    state.activeSession.updatedAt = now;
     persistState();
     updateUI();
   }
