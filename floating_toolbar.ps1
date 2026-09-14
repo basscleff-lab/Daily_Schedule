@@ -199,6 +199,9 @@ if ($script:state.Status -eq "OFFLINE") {
                     <!-- Advanced View Button -->
                     <Button Name="BtnAdvanced" Content="Advanced" Background="#1E3A8A" Foreground="#93C5FD" FontWeight="Bold" FontSize="10" Padding="6,2" BorderThickness="1" BorderBrush="#2563EB" Margin="0,0,5,0" Cursor="Hand" ToolTip="Open Full Invoices &amp; Timesheets"/>
 
+                    <!-- Optima Quick Reference Button -->
+                    <Button Name="BtnOptimaRef" Content="&#x1FA9F; Optima" Background="#047857" Foreground="#A7F3D0" FontWeight="Bold" FontSize="10" Padding="5,2" BorderThickness="1" BorderBrush="#10B981" Margin="0,0,5,0" Cursor="Hand" ToolTip="Open Optima Windows &amp; Doors Quick Reference"/>
+
                     <!-- In-App GitHub Update Button -->
                     <Button Name="BtnUpdate" Content="&#x21BB; Update" Background="#0F766E" Foreground="#99F6E4" FontWeight="Bold" FontSize="10" Padding="5,2" BorderThickness="1" BorderBrush="#14B8A6" Margin="0,0,5,0" Cursor="Hand" ToolTip="Click to check and apply updates directly from GitHub"/>
 
@@ -284,6 +287,7 @@ $TxtApptLabel    = $window.FindName("TxtApptLabel")
 $TxtAppts        = $window.FindName("TxtAppts")
 $BtnApptPlus     = $window.FindName("BtnApptPlus")
 $BtnAdvanced     = $window.FindName("BtnAdvanced")
+$BtnOptimaRef    = $window.FindName("BtnOptimaRef")
 $BtnUpdate       = $window.FindName("BtnUpdate")
 $BtnMin          = $window.FindName("BtnMin")
 $BtnClose        = $window.FindName("BtnClose")
@@ -347,6 +351,14 @@ $BtnAdvanced.Add_Click({
     $indexPath = Join-Path $PSScriptRoot "index.html"
     Start-Process "file:///$indexPath"
 })
+
+# Optima Quick Reference Button: Launches product reference hub
+if ($BtnOptimaRef) {
+    $BtnOptimaRef.Add_Click({
+        $refPath = Join-Path $PSScriptRoot "optima_reference.html"
+        Start-Process "file:///$refPath"
+    })
+}
 
 # In-App GitHub Direct Updater (Zero Git Required)
 function Update-AppFromGitHub {

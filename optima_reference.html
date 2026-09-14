@@ -1,0 +1,1417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Optima Windows & Doors — Quick Reference Hub (Sabrina)</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🪟</text></svg>">
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --card-border: #334155;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent: #38bdf8;
+      --accent-hover: #0284c7;
+      --accent-bg: rgba(56, 189, 248, 0.1);
+      --highlight: #f59e0b;
+      --highlight-bg: rgba(245, 158, 11, 0.12);
+      --success: #10b981;
+      --success-bg: rgba(16, 185, 129, 0.12);
+      --tag-window: #3b82f6;
+      --tag-door: #ec4899;
+      --tag-spec: #8b5cf6;
+      --tag-faq: #10b981;
+      --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font);
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding: 1rem;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    /* Header Bar */
+    header {
+      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1.25rem;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    .header-top {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .brand-icon {
+      font-size: 2rem;
+      background: rgba(56, 189, 248, 0.15);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      border-radius: 10px;
+      width: 48px;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .brand-title h1 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: #fff;
+    }
+
+    .brand-title p {
+      font-size: 0.825rem;
+      color: var(--text-muted);
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .btn-action {
+      background: #334155;
+      color: #e2e8f0;
+      border: 1px solid #475569;
+      padding: 0.45rem 0.85rem;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      transition: all 0.2s ease;
+      text-decoration: none;
+    }
+
+    .btn-action:hover {
+      background: #475569;
+      color: #fff;
+      border-color: #64748b;
+    }
+
+    /* Controls Bar: Search & Dropdown */
+    .controls-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr auto;
+      gap: 0.75rem;
+      align-items: center;
+    }
+
+    @media (max-width: 768px) {
+      .controls-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .select-wrapper, .search-wrapper {
+      position: relative;
+    }
+
+    .select-dropdown {
+      width: 100%;
+      background: #0f172a;
+      color: #f8fafc;
+      border: 1.5px solid #38bdf8;
+      border-radius: 8px;
+      padding: 0.65rem 1rem;
+      font-size: 0.925rem;
+      font-weight: 500;
+      cursor: pointer;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .select-dropdown:focus {
+      border-color: #7dd3fc;
+      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.25);
+    }
+
+    .search-input {
+      width: 100%;
+      background: #0f172a;
+      color: #f8fafc;
+      border: 1.5px solid var(--card-border);
+      border-radius: 8px;
+      padding: 0.65rem 1rem 0.65rem 2.25rem;
+      font-size: 0.925rem;
+      outline: none;
+      transition: all 0.2s;
+    }
+
+    .search-input:focus {
+      border-color: #38bdf8;
+      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.25);
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 0.75rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      pointer-events: none;
+    }
+
+    /* Category Filter Pills */
+    .filter-pills {
+      display: flex;
+      gap: 0.4rem;
+      margin-bottom: 1.25rem;
+      overflow-x: auto;
+      padding-bottom: 0.25rem;
+    }
+
+    .pill-btn {
+      background: #1e293b;
+      border: 1px solid var(--card-border);
+      color: var(--text-muted);
+      padding: 0.35rem 0.85rem;
+      border-radius: 20px;
+      font-size: 0.825rem;
+      font-weight: 500;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s;
+    }
+
+    .pill-btn:hover {
+      background: #334155;
+      color: #fff;
+    }
+
+    .pill-btn.active {
+      background: var(--accent);
+      color: #0f172a;
+      border-color: var(--accent);
+      font-weight: 700;
+    }
+
+    /* Quick Brag Bar */
+    .quick-brag-bar {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .brag-pill {
+      background: rgba(30, 41, 59, 0.7);
+      border: 1px solid rgba(51, 65, 85, 0.6);
+      border-radius: 8px;
+      padding: 0.6rem 0.85rem;
+      font-size: 0.8rem;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .brag-pill strong {
+      color: #38bdf8;
+    }
+
+    /* Reference Cards Grid */
+    .cards-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+      gap: 1.25rem;
+    }
+
+    @media (max-width: 768px) {
+      .cards-container {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .ref-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+      position: relative;
+    }
+
+    .ref-card:hover {
+      border-color: #475569;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    }
+
+    .ref-card.focused {
+      border-color: #38bdf8;
+      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.35);
+      animation: pulseHighlight 1s ease;
+    }
+
+    @keyframes pulseHighlight {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.02); }
+      100% { transform: scale(1); }
+    }
+
+    .card-header {
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--card-border);
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 0.5rem;
+      background: rgba(15, 23, 42, 0.4);
+    }
+
+    .card-title-group h2 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+    }
+
+    .card-category-badge {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 0.15rem 0.5rem;
+      border-radius: 12px;
+      letter-spacing: 0.05em;
+    }
+
+    .badge-window {
+      background: rgba(59, 130, 246, 0.15);
+      color: #60a5fa;
+      border: 1px solid rgba(59, 130, 246, 0.3);
+    }
+
+    .badge-door {
+      background: rgba(236, 72, 153, 0.15);
+      color: #f472b6;
+      border: 1px solid rgba(236, 72, 153, 0.3);
+    }
+
+    .badge-spec {
+      background: rgba(139, 92, 246, 0.15);
+      color: #a78bfa;
+      border: 1px solid rgba(139, 92, 246, 0.3);
+    }
+
+    .badge-faq {
+      background: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .card-body {
+      padding: 1.25rem;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+    }
+
+    .info-row {
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+    }
+
+    .info-label {
+      font-size: 0.725rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      font-weight: 700;
+    }
+
+    .info-value {
+      font-size: 0.875rem;
+      color: #e2e8f0;
+    }
+
+    /* What to Say / Soundbite Box */
+    .soundbite-box {
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid #334155;
+      border-left: 3.5px solid #38bdf8;
+      border-radius: 6px;
+      padding: 0.75rem 0.85rem;
+      margin-top: auto;
+      position: relative;
+    }
+
+    .soundbite-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.35rem;
+    }
+
+    .soundbite-label {
+      font-size: 0.725rem;
+      font-weight: 700;
+      color: #38bdf8;
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .btn-copy {
+      background: transparent;
+      border: 1px solid #475569;
+      color: #94a3b8;
+      font-size: 0.7rem;
+      padding: 0.15rem 0.45rem;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-copy:hover {
+      background: #334155;
+      color: #fff;
+      border-color: #94a3b8;
+    }
+
+    .btn-copy.copied {
+      background: #10b981;
+      color: #fff;
+      border-color: #10b981;
+    }
+
+    .soundbite-text {
+      font-size: 0.825rem;
+      color: #f1f5f9;
+      font-style: italic;
+      line-height: 1.45;
+    }
+
+    /* Bullet List inside info-value */
+    .bullet-list {
+      list-style: none;
+      padding-left: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .bullet-list li {
+      font-size: 0.825rem;
+      color: #cbd5e1;
+      position: relative;
+      padding-left: 1rem;
+    }
+
+    .bullet-list li::before {
+      content: "•";
+      color: #38bdf8;
+      position: absolute;
+      left: 0;
+      font-weight: bold;
+    }
+
+    /* No search results */
+    .no-results {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 3rem 1rem;
+      background: var(--card-bg);
+      border: 1px dashed var(--card-border);
+      border-radius: 12px;
+      color: var(--text-muted);
+    }
+
+    /* Booking Bridge Banner */
+    .booking-bridge-banner {
+      background: linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%);
+      border: 1.5px solid #3b82f6;
+      border-radius: 12px;
+      padding: 1.25rem;
+      margin-top: 1.5rem;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .bridge-content h3 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 0.25rem;
+    }
+
+    .bridge-content p {
+      font-size: 0.85rem;
+      color: #bfdbfe;
+    }
+
+    /* Sticky Bottom Fast Bar for Sabrina */
+    .sticky-dock {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(15, 23, 42, 0.95);
+      backdrop-filter: blur(8px);
+      border-top: 1px solid #334155;
+      padding: 0.5rem 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.8rem;
+      z-index: 1000;
+    }
+
+    .sticky-dock-text {
+      color: #cbd5e1;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .dock-highlight {
+      color: #38bdf8;
+      font-weight: 700;
+    }
+
+    /* Print styles for physical desk cheat sheet */
+    @media print {
+      body {
+        background: #fff;
+        color: #000;
+        padding: 0;
+      }
+      .controls-grid, .filter-pills, .sticky-dock, .header-actions, .btn-copy {
+        display: none !important;
+      }
+      .ref-card {
+        background: #fff;
+        border: 1px solid #ccc;
+        color: #000;
+        page-break-inside: avoid;
+        box-shadow: none;
+      }
+      .card-header {
+        background: #eee;
+      }
+      .card-title-group h2, .info-value, .soundbite-text {
+        color: #000 !important;
+      }
+      .soundbite-box {
+        background: #f9f9f9;
+        border-color: #ddd;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container" style="padding-bottom: 3.5rem;">
+    
+    <!-- Top Header -->
+    <header>
+      <div class="header-top">
+        <div class="brand">
+          <div class="brand-icon">🪟</div>
+          <div class="brand-title">
+            <h1>Optima Windows &amp; Doors — Quick Reference Hub</h1>
+            <p>Sabrina's Instant Lookup Tool &bull; Free In-Home Consultation Booking Support</p>
+          </div>
+        </div>
+
+        <div class="header-actions">
+          <button class="btn-action" onclick="window.print()" title="Print Cheat Sheet for Desk">🖨️ Print Sheet</button>
+          <button class="btn-action" id="btn-reset-filters" title="Reset All Filters">🔄 Reset</button>
+        </div>
+      </div>
+
+      <!-- Controls: Dropdown & Live Search -->
+      <div class="controls-grid">
+        <div class="select-wrapper">
+          <select id="quick-select" class="select-dropdown" aria-label="Jump directly to product or topic">
+            <option value="">⚡ Jump directly to any product or question...</option>
+            <optgroup label="🪟 Windows">
+              <option value="win-casement">Casement Windows (Crank Out / Airtight)</option>
+              <option value="win-awning">Awning Windows (Top Hinge / Rain Friendly)</option>
+              <option value="win-hung">Single &amp; Double Hung (Vertical / Tilt Clean)</option>
+              <option value="win-slider">Slider Windows (Horizontal Glide / Patio Clear)</option>
+              <option value="win-picture">Fixed / Picture Windows (Max Light &amp; View)</option>
+              <option value="win-bay-bow">Bay &amp; Bow Windows (Outward Projection)</option>
+              <option value="win-hopper">Basement &amp; Hopper Windows</option>
+            </optgroup>
+            <optgroup label="🚪 Doors">
+              <option value="door-steel">Steel Entry Doors (Maximum Security &amp; Value)</option>
+              <option value="door-fiberglass">Fiberglass Entry Doors (Wood Look / Dent Proof)</option>
+              <option value="door-patio">Sliding Patio Doors (2, 3, 4 Panel Smooth Glide)</option>
+              <option value="door-french">French &amp; Garden Doors (Classic Swinging Glass)</option>
+              <option value="door-custom">Door Glass, Sidelites &amp; Transoms</option>
+            </optgroup>
+            <optgroup label="⚙️ Specs &amp; Features">
+              <option value="spec-glass">Double vs. Triple Pane Glass</option>
+              <option value="spec-colors">Black Windows &amp; Frame Colors</option>
+              <option value="spec-warranty">25-Year Warranty &amp; Accidental Breakage</option>
+              <option value="spec-rebates">ENERGY STAR &amp; Government Rebates</option>
+            </optgroup>
+            <optgroup label="📞 Common Call Inquiries">
+              <option value="faq-price">"How much does it cost?" (Pricing Answer)</option>
+              <option value="faq-measure">"Can I just give rough measurements?"</option>
+              <option value="faq-repair">"Do you repair existing glass?"</option>
+              <option value="faq-origin">"Where are they manufactured?"</option>
+            </optgroup>
+          </select>
+        </div>
+
+        <div class="search-wrapper">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="live-search" class="search-input" placeholder="Type to filter: e.g. black, triple, casement, crank, price, warranty...">
+        </div>
+
+        <div style="font-size: 0.85rem; color: #94a3b8; text-align: right;">
+          <span id="results-count">17</span> items
+        </div>
+      </div>
+    </header>
+
+    <!-- Quick Stats & Selling Points Bar -->
+    <div class="quick-brag-bar">
+      <div class="brag-pill">
+        <span>🇩🇪</span>
+        <div><strong>German Engineered</strong><br><span style="color:#94a3b8;">Manufactured in the GTA</span></div>
+      </div>
+      <div class="brag-pill">
+        <span>🛡️</span>
+        <div><strong>25-Year Warranty</strong><br><span style="color:#94a3b8;">Frames, hardware &amp; installation</span></div>
+      </div>
+      <div class="brag-pill">
+        <span>⚾</span>
+        <div><strong>Accidental Breakage</strong><br><span style="color:#94a3b8;">Covered in warranty (rare in Ontario!)</span></div>
+      </div>
+      <div class="brag-pill">
+        <span>🌿</span>
+        <div><strong>ENERGY STAR®</strong><br><span style="color:#94a3b8;">Qualifies for efficiency rebates</span></div>
+      </div>
+    </div>
+
+    <!-- Category Filter Pills -->
+    <div class="filter-pills">
+      <button class="pill-btn active" data-filter="all">All Topics (17)</button>
+      <button class="pill-btn" data-filter="window">🪟 Windows (7)</button>
+      <button class="pill-btn" data-filter="door">🚪 Doors (5)</button>
+      <button class="pill-btn" data-filter="spec">⚙️ Specs &amp; Warranty (4)</button>
+      <button class="pill-btn" data-filter="faq">📞 Call FAQs &amp; Scripts (4)</button>
+    </div>
+
+    <!-- MAIN CARDS CONTAINER -->
+    <main class="cards-container" id="cards-grid">
+
+      <!-- 1. CASEMENT WINDOWS -->
+      <article class="ref-card" id="win-casement" data-category="window" data-keywords="casement crank open outward side hinge airtight seal bedroom kitchen modern">
+        <div class="card-header">
+          <div class="card-title-group">
+            <h2>🪟 Casement Windows</h2>
+          </div>
+          <span class="card-category-badge badge-window">Window</span>
+        </div>
+        <div class="card-body">
+          <div class="info-row">
+            <span class="info-label">What It Is</span>
+            <span class="info-value">Hinged on the side; cranks outward like a door up to 90 degrees.</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Best Used For</span>
+            <span class="info-value">Living rooms, bedrooms, and any spot where maximum airflow and the tightest winter seal are needed.</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Key Highlights</span>
+            <ul class="bullet-list">
+              <li>Multi-point locking mechanism pulls sash flush against frame (tightest draft seal).</li>
+              <li>Cranks a full 90° for easy reach to clean outside glass from inside.</li>
+              <li>Folding low-profile crank handle won't catch on blinds or curtains.</li>
+            </ul>
+          </div>
+          <div class="soundbite-box">
+            <div class="soundbite-header">
+              <span class="soundbite-label">💬 What to say to client</span>
+              <button class="btn-copy" onclick="copySoundbite(this)">Copy</button>
+            </div>
+            <p class="soundbite-text">"Our casement windows crank open outward for maximum breeze, and their multi-point lock gives the tightest airtight seal against cold Ontario winters."</p>
+          </div>
+        </div>
+      </article>
+
+      <!-- 2. AWNING WINDOWS -->
+      <article class="ref-card" id="win-awning" data-category="window" data-keywords="awning top hinge bottom crank rain rainstorm kitchen sink bathroom moisture ventilation">
+        <div class="card-header">
+          <div class="card-title-group">
+            <h2>🪟 Awning Windows</h2>
+          </div>
+          <span class="card-category-badge badge-window">Window</span>
+        </div>
+        <div class="card-body">
+          <div class="info-row">
+            <span class="info-label">What It Is</span>
+            <span class="info-value">Hinged along the top; cranks open outward from the bottom, forming a small protective awning.</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Best Used For</span>
+            <span class="info-value">Bathrooms, over the kitchen sink, or paired below large picture windows.</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Key Highlights</span>
+            <ul class="bullet-list">
+              <li>Can stay open for fresh air during a light rain without water entering.</li>
+              <li>Effortless crank operation over kitchen counters.</li>
+              <li>High acoustic insulation and dual-side compression locks.</li>
+            </ul>
+          </div>
+          <div class="soundbite-box">
+            <div class="soundbite-header">
+              <span class="soundbite-label">💬 What to say to client</span>
+              <button class="btn-copy" onclick="copySoundbite(this)">Copy</button>
+            </div>
+            <p class="soundbite-text">"Awning windows hinge at the top and push out from the bottom—they're perfect for kitchens and bathrooms because you can keep them open for fresh air even when it's raining."</p>
+          </div>
+        </div>
+      </article>
+
+      <!-- 3. HUNG WINDOWS -->
+      <article class="ref-card" id="win-hung" data-category="window" data-keywords="hung single double vertical slide up down tilt inward cleaning traditional bedroom">
+        <div class="card-header">
+          <div class="card-title-group">
+            <h2>🪟 Single &amp; Double Hung</h2>
+          </div>
+          <span class="card-category-badge badge-window">Window</span>
+        </div>
+        <div class="card-body">
+          <div class="info-row">
+            <span class="info-label">What It Is</span>
+            <span class="info-value">Traditional vertical sliding windows. <strong>Single:</strong> bottom sash moves up. <strong>Double:</strong> both top and bottom sashes move.</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Best Used For</span>
+            <span class="info-value">Colonial / traditional homes, bedrooms, or walls next to walkways/patios where an outward crank would obstruct foot traffic.</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Key Highlights</span>
+            <ul class="bullet-list">
+              <li>Sashes tilt inward 90° so you can clean the exterior glass safely from inside (no ladder needed!).</li>
+              <li>Double-hung allows hot air to escape from top while cool air enters from bottom.</li>
+              <li>Heavy-duty constant-force balance springs for featherlight opening.</li>
+            </ul>
+          </div>
+          <div class="soundbite-box">
+            <div class="soundbite-header">
+              <span class="soundbite-label">💬 What to say to client</span>
+              <button class="btn-copy" onclick="copySoundbite(this)">Copy</button>
+            </div>
+            <p class="soundbite-text">"Hung windows slide vertically, and both sashes tilt right into the room so you can easily wipe down the outside glass without ever stepping onto a ladder."</p>
+          </div>
+        </div>
+      </article>
+
+      <!-- 4. SLIDER WINDOWS -->
+      <article class="ref-card" id="win-slider" data-category="window" data-keywords="slider single double end vent horizontal glide left right walkway deck patio cost effective">
+        <div class="card-header">
+          <div class="card-title-group">
+            <h2>🪟 Slider Windows (Single / Double / End-Vent)</h2>
+          </div>
+          <span class="card-category-badge badge-window">Window</span>
+        </div>
+        <div class="card-body">
+          <div class="info-row">
+            <span class="info-label">What It Is</span>
+            <span class="info-value">Horizontal sliding windows. Single has 1 moving sash; Double has 2; <strong>End-Vent</strong> has a big center fixed window flanked by two sliding vents.</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Best Used For</span>
+            <span class="info-value">Wide window openings, bedrooms, basements, or areas opening onto decks and porches.</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Key Highlights</span>
+            <ul class="bullet-list">
+              <li>Smooth brass or tandem nylon roller glides for effortless one-finger operation.</li>
+              <li>Sashes tilt or lift out for easy cleaning.</li>
+              <li>Very cost-effective for wider openings compared to multiple casements.</li>
+            </ul>
+          </div>
+          <div class="soundbite-box">
+            <div class="soundbite-header">
+              <span class="soundbite-label">💬 What to say to client</span>
+              <button class="btn-copy" onclick="copySoundbite(this)">Copy</button>
+            </div>
+            <p class="soundbite-text">"Our slider windows glide smoothly left-to-right. They're ideal for wide wall spaces and areas where you don't want a window swinging outside into a deck or walkway."</p>
+          </div>
+        </div>
+      </article>
+
+      <!-- 5. FIXED / PICTURE WINDOWS -->
+      <article class="ref-card" id="win-picture" data-category="window" data-keywords="picture fixed non opening stationary panoramic view sunlight daylight energy efficient draft free">
+        <div class="card-header">
+          <div class="card-title-group">
+            <h2>🪟 Fixed / Picture Windows</h2>
+          </div>
+          <span class="card-category-badge badge-window">Window</span>
+        </div>
+        <div class="card-body">
+          <div class="info-row">
+            <span class="info-label">What It Is</span>
+            <span class="info-value">Stationary, non-opening window engineered for maximum glass area and unobstructed view.</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Best Used For</span>
+            <span class="info-value">Living rooms, high stairwells, dining rooms, or framing a scenic backyard view.</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Key Highlights</span>
+            <ul class="bullet-list">
+              <li>Highest energy rating of all windows (zero moving parts, joints, or draft points).</li>
+              <li>Brings in maximum natural daylight.</li>
+              <li>Frequently paired with operable casement or awning flankers on either side.</li>
+            </ul>
+          </div>
+          <div class="soundbite-box">
+            <div class="soundbite-header">
+              <span class="soundbite-label">💬 What to say to client</span>
+              <button class="btn-copy" onclick="copySoundbite(this)">Copy</button>
+            </div>
+            <p class="soundbite-text">"Picture windows are stationary for panoramic views and natural light. Because they don't open, they offer the absolute highest insulation rating and zero draft potential."</p>
+          </div>
+        </div>
+      </article>
+
+      <!-- 6. BAY & BOW WINDOWS -->
+      <article class="ref-card" id="win-bay-bow" data-category="window" data-keywords="bay bow projection angle curve shelf seat living room curb appeal 3 panel 4 5 6 panel">
+        <div class="card-header">
+          <div class="card-title-group">
+            <h2>🪟 Bay &amp; Bow Windows</h2>
+          </div>
+          <span class="card-category-badge badge-window">Window</span>
+        </div>
+        <div class="card-body">
+          <div class="info-row">
+            <span class="info-label">What It Is</span>
+            <span class="info-value">Windows projecting outward from the home wall. <strong>Bay:</strong> 3 distinct panels (usually picture center + 2 angled flankers). <strong>Bow:</strong> 4 to 6 panels in a gentle curve.</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Best Used For</span>
+            <span class="info-value">Living rooms, master suites, adding interior seating or plant shelves, and dramatic front curb appeal.</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Key Highlights</span>
+            <ul class="bullet-list">
+              <li>Captures sunlight from multiple directions throughout the day.</li>
+              <li>Creates extra interior floor space and an architectural focal point.</li>
+              <li>Flankers can be configured as casements for cross-ventilation.</li>
+            </ul>
+          </div>
+          <div class="soundbite-box">
+            <div class="soundbite-header">
+              <span class="soundbite-label">💬 What to say to client</span>
+              <button class="btn-copy" onclick="copySoundbite(this)">Copy</button>
+            </div>
+            <p class="soundbite-text">"Bay and bow windows project outward to bring in light from all angles and create an interior shelf or bench space. Bay has three panels, while Bow creates a gentle graceful curve."</p>
+          </div>
+        </div>
+      </article>
+
+      <!-- 7. BASEMENT / HOPPER -->
+      <article class="ref-card" id="win-hopper" data-category="window" data-keywords="basement hopper slider ground level security tilt inward moisture laundry room">
+        <div class="card-header">
+          <div class="card-title-group">
+            <h2>🪟 Basement &amp; Hopper Windows</h2>
+          </div>
+          <span class="card-category-badge badge-window">Window</span>
+        </div>
+        <div class="card-body">
+          <div class="info-row">
+            <span class="info-label">What It Is</span>
+            <span class="info-value">Compact windows built for lower walls and foundation openings; opens inward from the top (hopper) or slides horizontally.</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Best Used For</span>
+            <span class="info-value">Basements, crawlspaces, laundry rooms, lower-level security and ventilation.</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Key Highlights</span>
+            <ul class="bullet-list">
+              <li>Rot-proof vinyl frames that resist foundation moisture and damp soil conditions.</li>
+              <li>Heavy-duty security cam locks.</li>
+              <li>Egress-compliant sizing options available for legal basement apartments.</li>
+            </ul>
+          </div>
+          <div class="soundbite-box">
+            <div class="soundbite-header">
+              <span class="soundbite-label">💬 What to say to client</span>
+              <button class="btn-copy" onclick="copySoundbite(this)">Copy</button>
+            </div>
+            <p class="soundbite-text">"Our basement windows use rot-proof vinyl frames with insulated glass and heavy-duty locks—giving you great moisture resistance, security, and warmth."</p>
+          </div>
+        </div>
+      </article>
+
+      <!-- 8. STEEL ENTRY DOORS -->
+      <article class="ref-card" id="door-steel" data-category="door" data-keywords="steel entry front door security heavy duty insulated foam durable budget painted contemporary">
+        <div class="card-header">
+          <div class="card-title-group">
+            <h2>🚪 Steel Entry Doors</h2>
+          </div>
+          <span class="card-category-badge badge-door">Door</span>
+        </div>
+        <div class="card-body">
+          <div class="info-row">
+            <span class="info-label">What It Is</span>
+            <span class="info-value">Heavy-gauge galvanized steel door with a high-density polyurethane insulating foam core.</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Best Used For</span>
+            <span class="info-value">Homeowners wanting maximum security, sleek modern painted finishes, and the best price-to-performance value.</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Key Highlights</span>
+            <ul class="bullet-list">
+              <li>Maximum structural strength and forced-entry resistance.</li>
+              <li>High thermal insulation core keeps winter drafts out completely.</li>
+              <li>Available in custom factory-applied paint finishes (Black, Charcoal, Navy, etc.).</li>
+            </ul>
+          </div>
+          <div class="soundbite-box">
+            <div class="soundbite-header">
+              <span class="soundbite-label">💬 What to say to client</span>
+              <button class="btn-copy" onclick="copySoundbite(this)">Copy</button>
+            </div>
+            <p class="soundbite-text">"Our steel doors provide maximum security and strength with a high-density insulating core. They come pre-finished in gorgeous modern colors and won't rot or warp."</p>
+          </div>
+        </div>
+      </article>
+
+      <!-- 9. FIBERGLASS ENTRY DOORS -->
+      <article class="ref-card" id="door-fiberglass" data-category="door" data-keywords="fiberglass entry front door wood grain oak mahogany dent resistant luxury premium curb appeal">
+        <div class="card-header">
+          <div class="card-title-group">
+            <h2>🚪 Fiberglass Entry Doors</h2>
+          </div>
+          <span class="card-category-badge badge-door">Door</span>
+        </div>
+        <div class="card-body">
+          <div class="info-row">
+            <span class="info-label">What It Is</span>
+            <span class="info-value">Compression-molded composite door engineered to mimic real wood grain without any wood maintenance.</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Best Used For</span>
+            <span class="info-value">Homeowners wanting luxury curb appeal, high-end wood aesthetics (Oak, Cherry, Mahogany), and maximum scratch/dent resistance.</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Key Highlights</span>
+            <ul class="bullet-list">
+              <li>Dent-proof, scratch-proof, and won't rust, swell, or peel in humidity.</li>
+              <li>Can be stained with realistic wood grain or painted smooth.</li>
+              <li>Superior thermal insulation (up to 4x the R-value of a traditional wood door).</li>
+            </ul>
+          </div>
+          <div class="soundbite-box">
+            <div class="soundbite-header">
+              <span class="soundbite-label">💬 What to say to client</span>
+              <button class="btn-copy" onclick="copySoundbite(this)">Copy</button>
+            </div>
+            <p class="soundbite-text">"Fiberglass gives you the rich, warm look of real wood but with zero maintenance—it won't dent, scratch, rot, or swell, and has incredible insulation for winter."</p>
+          </div>
+        </div>
+      </article>
+
+      <!-- 10. SLIDING PATIO DOORS -->
+      <article class="ref-card" id="door-patio" data-category="door" data-keywords="sliding patio door glass deck backyard balcony 2 panel 3 panel 4 panel roller lock screen">
+        <div class="card-header">
+          <div class="card-title-group">
+            <h2>🚪 Sliding Patio Doors</h2>
+          </div>
+          <span class="card-category-badge badge-door">Door</span>
+        </div>
+        <div class="card-body">
+          <div class="info-row">
+            <span class="info-label">What It Is</span>
+            <span class="info-value">Heavy-duty glass door panels sliding horizontally on precision tracks (available in 2, 3, or 4-panel configurations).</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Best Used For</span>
+            <span class="info-value">Backyard, deck, or balcony access where swinging doors would hit indoor furniture or outdoor patio sets.</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Key Highlights</span>
+            <ul class="bullet-list">
+              <li>Heavy-duty tandem nylon rollers for smooth, quiet, one-finger sliding.</li>
+              <li>Multi-point locking system and optional foot-bolt security lock.</li>
+              <li>Tempered safety glass with Low-E coating and argon gas.</li>
+            </ul>
+          </div>
+          <div class="soundbite-box">
+            <div class="soundbite-header">
+              <span class="soundbite-label">💬 What to say to client</span>
+              <button class="btn-copy" onclick="copySoundbite(this)">Copy</button>
+            </div>
+            <p class="soundbite-text">"Our sliding patio doors glide effortlessly on heavy-duty tandem rollers and feature multi-point security locks and insulated tempered glass to keep drafts completely out."</p>
+          </div>
+        </div>
+      </article>
+
+      <!-- 11. FRENCH & GARDEN DOORS -->
+      <article class="ref-card" id="door-french" data-category="door" data-keywords="french garden door hinged swinging glass backyard dining room terrace double door">
+        <div class="card-header">
+          <div class="card-title-group">
+            <h2>🚪 French &amp; Garden Doors</h2>
+          </div>
+          <span class="card-category-badge badge-door">Door</span>
+        </div>
+        <div class="card-body">
+          <div class="info-row">
+            <span class="info-label">What It Is</span>
+            <span class="info-value">Hinged swinging glass doors. <strong>French doors:</strong> both doors swing open from the center. <strong>Garden doors:</strong> one operates as the main door, the other has a venting screen.</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Best Used For</span>
+            <span class="info-value">Traditional homes, dining rooms, terraces, or creating a wide, grand walkthrough to an outdoor patio.</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Key Highlights</span>
+            <ul class="bullet-list">
+              <li>Provides an open, luxurious architectural entrance.</li>
+              <li>Can be configured to swing inward (in-swing) or outward (out-swing).</li>
+              <li>Heavy compression weatherstripping for complete weather seal.</li>
+            </ul>
+          </div>
+          <div class="soundbite-box">
+            <div class="soundbite-header">
+              <span class="soundbite-label">💬 What to say to client</span>
+              <button class="btn-copy" onclick="copySoundbite(this)">Copy</button>
+            </div>
+            <p class="soundbite-text">"French doors swing open for an upscale, classic estate look and a wide open entrance, while garden doors give you a hinged swing with a built-in venting screen option."</p>
+          </div>
+        </div>
+      </article>
+
+      <!-- 12. DOOR GLASS, SIDELITES & TRANSOMS -->
+      <article class="ref-card" id="door-custom" data-category="door" data-keywords="sidelite transom glass insert frosted decorative caming privacy blinds between glass front door">
+        <div class="card-header">
+          <div class="card-title-group">
+            <h2>🚪 Sidelites, Transoms &amp; Glass Inserts</h2>
+          </div>
+          <span class="card-category-badge badge-door">Door</span>
+        </div>
+        <div class="card-body">
+          <div class="info-row">
+            <span class="info-label">What They Are</span>
+            <span class="info-value"><strong>Sidelite:</strong> Tall vertical glass window on the side of a door. <strong>Transom:</strong> Decorative glass window above the door. <strong>Inserts:</strong> Glass panels inside the door.</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Customization Options</span>
+            <ul class="bullet-list">
+              <li>Frosted or acid-etched glass for complete privacy with natural daylight.</li>
+              <li>Decorative caming (black, satin nickel, or brass accents).</li>
+              <li>Internal mini-blinds sealed inside the glass (dust-free forever!).</li>
+            </ul>
+          </div>
+          <div class="soundbite-box">
+            <div class="soundbite-header">
+              <span class="soundbite-label">💬 What to say to client</span>
+              <button class="btn-copy" onclick="copySoundbite(this)">Copy</button>
+            </div>
+            <p class="soundbite-text">"We can customize your entrance with matching sidelites on the sides, a transom above, and frosted or textured glass inserts that let light in while keeping full privacy."</p>
+          </div>
+        </div>
+      </article>
+
+      <!-- 13. DOUBLE VS TRIPLE PANE -->
+      <article class="ref-card" id="spec-glass" data-category="spec" data-keywords="glass double triple pane argon low e sound noise insulation condensation cold winter cost difference">
+        <div class="card-header">
+          <div class="card-title-group">
+            <h2>⚙️ Double vs. Triple Pane Glass</h2>
+          </div>
+          <span class="card-category-badge badge-spec">Spec</span>
+        </div>
+        <div class="card-body">
+          <div class="info-row">
+            <span class="info-label">The Difference</span>
+            <span class="info-value"><strong>Double Pane:</strong> 2 glass panes + 1 argon gas pocket (Standard).<br><strong>Triple Pane:</strong> 3 glass panes + 2 argon gas pockets (+~$150–$400/window).</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">When To Recommend Triple Pane</span>
+            <ul class="bullet-list">
+              <li>Home is on a busy street or highway (exceptional soundproofing).</li>
+              <li>Severe north or west wind exposure / cold drafts.</li>
+              <li>Homeowner wants zero winter window condensation and maximum energy savings.</li>
+            </ul>
+          </div>
+          <div class="soundbite-box">
+            <div class="soundbite-header">
+              <span class="soundbite-label">💬 What to say to client</span>
+              <button class="btn-copy" onclick="copySoundbite(this)">Copy</button>
+            </div>
+            <p class="soundbite-text">"Double pane is already very high-performance, but if you're on a noisy street or want the absolute warmest window with zero winter condensation, triple pane is fantastic. Our specialist can price both options side-by-side during your visit."</p>
+          </div>
+        </div>
+      </article>
+
+      <!-- 14. BLACK WINDOWS & COLORS -->
+      <article class="ref-card" id="spec-colors" data-category="spec" data-keywords="color black frame anthracite grey brown white wood grain heat reflective uv uv stable fade warp">
+        <div class="card-header">
+          <div class="card-title-group">
+            <h2>⚙️ Black Windows &amp; Custom Colors</h2>
+          </div>
+          <span class="card-category-badge badge-spec">Spec</span>
+        </div>
+        <div class="card-body">
+          <div class="info-row">
+            <span class="info-label">The Trend</span>
+            <span class="info-value">Modern Black and Anthracite Grey exterior frames are Optima's #1 most requested design trend.</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Key Technology</span>
+            <ul class="bullet-list">
+              <li>Heat-reflective pigments reflect solar heat away so dark frames won't warp or expand in direct summer sun.</li>
+              <li>UV-stable coatings prevent chalking, peeling, and color fading.</li>
+              <li>Dual-color options: sleek Black on the outside, crisp White or woodgrain inside.</li>
+            </ul>
+          </div>
+          <div class="soundbite-box">
+            <div class="soundbite-header">
+              <span class="soundbite-label">💬 What to say to client</span>
+              <button class="btn-copy" onclick="copySoundbite(this)">Copy</button>
+            </div>
+            <p class="soundbite-text">"Yes, our black windows are extremely popular! They use specialized heat-reflective technology so they don't absorb excessive heat or warp. Our technician will bring actual color samples right to your home."</p>
+          </div>
+        </div>
+      </article>
+
+      <!-- 15. 25-YEAR WARRANTY -->
+      <article class="ref-card" id="spec-warranty" data-category="spec" data-keywords="warranty 25 year lifetime seal accidental glass breakage baseball rock lawnmower transfer registration">
+        <div class="card-header">
+          <div class="card-title-group">
+            <h2>⚙️ 25-Year Warranty &amp; Accidental Glass</h2>
+          </div>
+          <span class="card-category-badge badge-spec">Spec</span>
+        </div>
+        <div class="card-body">
+          <div class="info-row">
+            <span class="info-label">Coverage Details</span>
+            <ul class="bullet-list">
+              <li><strong>25-Year Comprehensive Warranty:</strong> Covers vinyl frames, hardware, mechanisms, and labor/installation.</li>
+              <li><strong>Lifetime Warranty:</strong> On the insulated glass seal against fogging or seal failure.</li>
+              <li><strong>Accidental Breakage Included:</strong> Covers glass broken by stray rocks, lawnmowers, or baseballs (almost no competitor covers this!).</li>
+              <li><strong>Zero Registration Hassle:</strong> Automatically active from installation day; Optima keeps all records permanently on file.</li>
+            </ul>
+          </div>
+          <div class="soundbite-box">
+            <div class="soundbite-header">
+              <span class="soundbite-label">💬 What to say to client</span>
+              <button class="btn-copy" onclick="copySoundbite(this)">Copy</button>
+            </div>
+            <p class="soundbite-text">"We back everything with a 25-year warranty on frames, hardware, and installation, plus a lifetime glass seal warranty. We even include accidental glass breakage coverage, and all records are permanently kept on file."</p>
+          </div>
+        </div>
+      </article>
+
+      <!-- 16. ENERGY STAR & REBATES -->
+      <article class="ref-card" id="spec-rebates" data-category="spec" data-keywords="rebate grant government energy star enbridge her savings green home northern zone efficiency">
+        <div class="card-header">
+          <div class="card-title-group">
+            <h2>⚙️ ENERGY STAR® &amp; Energy Rebates</h2>
+          </div>
+          <span class="card-category-badge badge-spec">Spec</span>
+        </div>
+        <div class="card-body">
+          <div class="info-row">
+            <span class="info-label">Certifications</span>
+            <span class="info-value">100% certified for Canada's Northern Climate Zone, meeting all National Resources Canada (NRCan) energy ratings.</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Active Incentives</span>
+            <ul class="bullet-list">
+              <li>Qualifies for available provincial and utility rebates (such as the $100/opening Home Renovation Savings rebate or Enbridge programs where eligible).</li>
+              <li>Technicians provide the exact NRCan certification labels needed for rebate paperwork.</li>
+            </ul>
+          </div>
+          <div class="soundbite-box">
+            <div class="soundbite-header">
+              <span class="soundbite-label">💬 What to say to client</span>
+              <button class="btn-copy" onclick="copySoundbite(this)">Copy</button>
+            </div>
+            <p class="soundbite-text">"All of our windows are ENERGY STAR certified for Canada's climate zone and qualify for active efficiency rebates. Our consultant will highlight any rebates available for your specific home during the visit."</p>
+          </div>
+        </div>
+      </article>
+
+      <!-- 17. PRICING FAQ -->
+      <article class="ref-card" id="faq-price" data-category="faq" data-keywords="price cost quote estimate how much ball park rough estimate expensive">
+        <div class="card-header">
+          <div class="card-title-group">
+            <h2>📞 "How much will it cost?"</h2>
+          </div>
+          <span class="card-category-badge badge-faq">Call FAQ</span>
+        </div>
+        <div class="card-body">
+          <div class="info-row">
+            <span class="info-label">Why We Can't Guess Over Phone</span>
+            <span class="info-value">Every single window and door is custom-manufactured to the millimeter. Sizing, glass packages, interior trims, and installation type vary.</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">The Solution</span>
+            <span class="info-value">Book the 100% free, zero-pressure in-home measurement. The specialist brings laser measuring tools, design swatches, and provides a guaranteed written quote on the spot.</span>
+          </div>
+          <div class="soundbite-box">
+            <div class="soundbite-header">
+              <span class="soundbite-label">💬 What to say to client</span>
+              <button class="btn-copy" onclick="copySoundbite(this)">Copy</button>
+            </div>
+            <p class="soundbite-text">"Because every window and door is custom-built to the exact millimeter of your home, pricing depends on sizing and glass options. We send a specialist out for a free, zero-obligation measurement who can give you an exact, guaranteed quote on the spot. Would morning or afternoon work better this week?"</p>
+          </div>
+        </div>
+      </article>
+
+      <!-- 18. ROUGH MEASUREMENTS FAQ -->
+      <article class="ref-card" id="faq-measure" data-category="faq" data-keywords="measure measurement rough tape measure dimension give my own measurements size">
+        <div class="card-header">
+          <div class="card-title-group">
+            <h2>📞 "Can I just give you my measurements?"</h2>
+          </div>
+          <span class="card-category-badge badge-faq">Call FAQ</span>
+        </div>
+        <div class="card-body">
+          <div class="info-row">
+            <span class="info-label">The Reality</span>
+            <span class="info-value">Client tape-measure numbers don't account for drywall thickness, frame depth, brick-moulds, or out-of-square headers.</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">How to Address Gracefully</span>
+            <span class="info-value">Accept their rough dimensions to note the scope, but explain that our technician's laser verification is free and protects them from costly errors.</span>
+          </div>
+          <div class="soundbite-box">
+            <div class="soundbite-header">
+              <span class="soundbite-label">💬 What to say to client</span>
+              <button class="btn-copy" onclick="copySoundbite(this)">Copy</button>
+            </div>
+            <p class="soundbite-text">"You can definitely share your rough sizes so our team knows the scope! But to protect you from ordering something that might not fit or missing framing details, our certified technician comes out to take exact structural measurements at zero charge."</p>
+          </div>
+        </div>
+      </article>
+
+      <!-- 19. REPAIR VS REPLACE FAQ -->
+      <article class="ref-card" id="faq-repair" data-category="faq" data-keywords="repair fix broken glass pane foggy cracked pane repair only replacement">
+        <div class="card-header">
+          <div class="card-title-group">
+            <h2>📞 "Do you repair existing glass?"</h2>
+          </div>
+          <span class="card-category-badge badge-faq">Call FAQ</span>
+        </div>
+        <div class="card-body">
+          <div class="info-row">
+            <span class="info-label">Policy</span>
+            <span class="info-value">Optima is a full-system custom manufacturer and replacement company. We do not do one-off glass pane repairs or mechanical hardware repairs on old third-party windows.</span>
+          </div>
+          <div class="soundbite-box">
+            <div class="soundbite-header">
+              <span class="soundbite-label">💬 What to say to client</span>
+              <button class="btn-copy" onclick="copySoundbite(this)">Copy</button>
+            </div>
+            <p class="soundbite-text">"Optima specializes in full-system custom window and door replacements backed by our 25-year warranty, rather than patching old glass. If you're considering upgrading to brand new energy-efficient windows, we'd love to set up a free consultation for you!"</p>
+          </div>
+        </div>
+      </article>
+
+      <!-- 20. WHERE ARE THEY MADE FAQ -->
+      <article class="ref-card" id="faq-origin" data-category="faq" data-keywords="where made local canada gta german manufactured factory company origin">
+        <div class="card-header">
+          <div class="card-title-group">
+            <h2>📞 "Where are they manufactured?"</h2>
+          </div>
+          <span class="card-category-badge badge-faq">Call FAQ</span>
+        </div>
+        <div class="card-body">
+          <div class="info-row">
+            <span class="info-label">The Answer</span>
+            <span class="info-value">Manufactured locally in the Greater Toronto Area (GTA) utilizing German engineering principles and certified Canadian climate standards.</span>
+          </div>
+          <div class="soundbite-box">
+            <div class="soundbite-header">
+              <span class="soundbite-label">💬 What to say to client</span>
+              <button class="btn-copy" onclick="copySoundbite(this)">Copy</button>
+            </div>
+            <p class="soundbite-text">"Our products are manufactured locally right here in the Greater Toronto Area using German engineering principles specifically designed for Canadian winters."</p>
+          </div>
+        </div>
+      </article>
+
+    </main>
+
+    <!-- Bottom Bridge Card -->
+    <div class="booking-bridge-banner">
+      <div class="bridge-content">
+        <h3>🎯 Sabrina's Call Goal: Book the Free In-Home Measurement</h3>
+        <p>Answer their product question with a quick soundbite &bull; Validate their project &bull; Bridge to: <em>"Would morning or afternoon work better for a free measurement?"</em></p>
+      </div>
+      <div>
+        <button class="btn-action" style="background:#3b82f6; border-color:#2563eb; color:white; font-weight:bold; padding:0.6rem 1rem;" onclick="document.getElementById('quick-select').focus()">
+          ⚡ Jump to Any Question
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Sticky Bottom Quick Dock -->
+  <div class="sticky-dock">
+    <div class="sticky-dock-text">
+      <span>📞 <strong>Sabrina's Golden Rule:</strong> Keep answers short &amp; clear &bull; Don't quote prices over phone &bull; Always bridge to the <span class="dock-highlight">Free In-Home Measurement</span></span>
+    </div>
+    <div>
+      <span style="color:#94a3b8; font-size:0.75rem;">Optima Reference v1.0</span>
+    </div>
+  </div>
+
+  <script>
+    // Elements
+    const quickSelect = document.getElementById('quick-select');
+    const searchInput = document.getElementById('live-search');
+    const cards = document.querySelectorAll('.ref-card');
+    const pillBtns = document.querySelectorAll('.pill-btn');
+    const resultsCount = document.getElementById('results-count');
+    const btnReset = document.getElementById('btn-reset-filters');
+
+    let currentFilter = 'all';
+
+    // Dropdown Jump Function
+    quickSelect.addEventListener('change', (e) => {
+      const targetId = e.target.value;
+      if (!targetId) return;
+
+      // Reset filters so card is visible
+      resetFilters(false);
+
+      const targetCard = document.getElementById(targetId);
+      if (targetCard) {
+        targetCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        cards.forEach(c => c.classList.remove('focused'));
+        targetCard.classList.add('focused');
+        setTimeout(() => {
+          targetCard.classList.remove('focused');
+        }, 3000);
+      }
+    });
+
+    // Filter by category pill
+    pillBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        pillBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentFilter = btn.dataset.filter;
+        applyFilters();
+      });
+    });
+
+    // Live Search
+    searchInput.addEventListener('input', () => {
+      applyFilters();
+    });
+
+    function applyFilters() {
+      const query = searchInput.value.toLowerCase().trim();
+      let visibleCount = 0;
+
+      cards.forEach(card => {
+        const category = card.dataset.category;
+        const keywords = card.dataset.keywords.toLowerCase();
+        const textContent = card.innerText.toLowerCase();
+
+        const matchesCategory = (currentFilter === 'all' || category === currentFilter);
+        const matchesSearch = (!query || keywords.includes(query) || textContent.includes(query));
+
+        if (matchesCategory && matchesSearch) {
+          card.style.display = 'flex';
+          visibleCount++;
+        } else {
+          card.style.display = 'none';
+        }
+      });
+
+      resultsCount.textContent = visibleCount;
+    }
+
+    function resetFilters(clearSearch = true) {
+      if (clearSearch) searchInput.value = '';
+      currentFilter = 'all';
+      pillBtns.forEach(b => b.classList.remove('active'));
+      pillBtns[0].classList.add('active');
+      quickSelect.value = '';
+      applyFilters();
+    }
+
+    btnReset.addEventListener('click', () => resetFilters(true));
+
+    // One-Click Copy Soundbite
+    function copySoundbite(btn) {
+      const soundbiteBox = btn.closest('.soundbite-box');
+      const text = soundbiteBox.querySelector('.soundbite-text').innerText;
+      
+      // Clean quotes from text if present
+      const cleanText = text.replace(/^"|"$/g, '');
+
+      navigator.clipboard.writeText(cleanText).then(() => {
+        const originalText = btn.innerText;
+        btn.innerText = 'Copied! ✓';
+        btn.classList.add('copied');
+        setTimeout(() => {
+          btn.innerText = originalText;
+          btn.classList.remove('copied');
+        }, 2000);
+      }).catch(err => {
+        console.error('Failed to copy: ', err);
+      });
+    }
+
+    // Keyboard shortcut: Escape clears search
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        resetFilters(true);
+      }
+    });
+  </script>
+</body>
+</html>

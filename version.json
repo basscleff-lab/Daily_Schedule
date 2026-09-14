@@ -1,6 +1,6 @@
 {
-  "version": "1.5.5",
-  "build": "2026.09.14-rev2",
+  "version": "1.5.6",
+  "build": "2026.09.14-rev3",
   "releaseDate": "2026-09-14",
-  "notes": "Fixed callback alert queueing/cooldown, unified active live phone/admin breakdown, robust tombstone bidirectional sync (deleted_ids), File System Access direct disk bridge, and clean popup.html PiP toolbar."
+  "notes": "Added Optima Windows & Doors Quick Reference Hub (optima_reference.html), header button in Web Hub, floating toolbar button, desktop shortcut, and Deploy_To_This_PC packaging."
 }

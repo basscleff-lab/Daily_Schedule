@@ -106,7 +106,7 @@ if exist "%TARGET_DIR%\data\sales_reps.json" (
 )
 
 :: Copy Core Files (excluding git, tests, and temporary storage)
-robocopy "%SOURCE_DIR%" "%TARGET_DIR%" floating_toolbar.ps1 Launch_Floating_Toolbar.bat Verify_PC_Compatibility.bat version.json index.html app.js styles.css popup.html popup.js popup.css README.md REQUIREMENTS.md /IS /IT /nfl /ndl /njh /njs
+robocopy "%SOURCE_DIR%" "%TARGET_DIR%" floating_toolbar.ps1 Launch_Floating_Toolbar.bat Verify_PC_Compatibility.bat version.json index.html app.js styles.css popup.html popup.js popup.css README.md REQUIREMENTS.md optima_reference.html Launch_Optima_Reference.bat /IS /IT /nfl /ndl /njh /njs
 
 :: Copy initial data files if target doesn't have them yet (NEVER overwrite existing data)
 if not exist "%TARGET_DIR%\data\shifts.json" (
@@ -154,10 +154,18 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -Command ^
     "$rc.WorkingDirectory = '%TARGET_DIR%';" ^
     "$rc.Description = 'Daily Shift History and Invoices';" ^
     "$rc.IconLocation = 'shell32.dll,264';" ^
-    "$rc.Save();"
+    "$rc.Save();" ^
+    "$refPath = Join-Path $desktop 'Optima Product Reference.lnk';" ^
+    "$orc = $ws.CreateShortcut($refPath);" ^
+    "$orc.TargetPath = '%TARGET_DIR%\optima_reference.html';" ^
+    "$orc.WorkingDirectory = '%TARGET_DIR%';" ^
+    "$orc.Description = 'Optima Windows & Doors Sales Booking Quick Reference';" ^
+    "$orc.IconLocation = 'shell32.dll,220';" ^
+    "$orc.Save();"
 
 echo       - Created "Daily Work Tracker" shortcut on Desktop.
 echo       - Created "Work Hub Invoices & Reports" shortcut on Desktop.
+echo       - Created "Optima Product Reference" shortcut on Desktop.
 echo.
 
 echo [5/5] Verification Complete!
