@@ -68,6 +68,23 @@
 
   // --- Utility Functions ---
 
+  function sanitizeId(id) {
+    if (!id) return '';
+    return String(id).replace(/[^a-zA-Z0-9_\-]/g, '');
+  }
+
+  function escapeHTML(str) {
+    if (!str) return '';
+    return String(str).replace(/[&<>'"]/g, tag => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      "'": '&#39;',
+      '"': '&quot;'
+    }[tag] || tag));
+  }
+  const escapeHtml = escapeHTML;
+
   function getTorontoNow() {
     return new Date();
   }
@@ -1192,24 +1209,13 @@
           </div>
           <div style="display: flex; align-items: center; gap: 0.75rem;">
             <span class="shift-duration-badge">${formatHoursMinutes(shift.durationSeconds)}</span>
-            <button class="btn-danger-outline" onclick="window.SabrinaApp.deleteShift('${shift.id}', this)" title="Delete entry">🗑️</button>
+            <button class="btn-danger-outline" onclick="window.SabrinaApp.deleteShift(this.dataset.id, this)" data-id="${escapeHTML(sanitizeId(shift.id))}" title="Delete entry">🗑️</button>
           </div>
         </div>
       `;
     });
 
     listEl.innerHTML = html;
-  }
-
-  function escapeHTML(str) {
-    if (!str) return '';
-    return String(str).replace(/[&<>'"]/g, tag => ({
-      '&': '&amp;',
-      '<': '&lt;',
-      '>': '&gt;',
-      "'": '&#39;',
-      '"': '&quot;'
-    }[tag] || tag));
   }
 
   function renderDailySummary() {
@@ -1292,7 +1298,7 @@
           <td contenteditable="true">${outcomeBadge} ${escapeHTML(call.outcome || '')}</td>
           <td contenteditable="true">${call.hasCallback ? '⏰ Follow-up scheduled' : 'Completed'}</td>
           <td class="no-print" style="text-align: center;">
-            <button class="btn-danger-outline" style="padding: 2px 6px; font-size: 0.75rem;" onclick="window.SabrinaApp.deleteCall('${call.id}', this)" title="Delete record">🗑️</button>
+            <button class="btn-danger-outline" style="padding: 2px 6px; font-size: 0.75rem;" onclick="window.SabrinaApp.deleteCall(this.dataset.id, this)" data-id="${escapeHTML(sanitizeId(call.id))}" title="Delete record">🗑️</button>
           </td>
         </tr>
       `;
@@ -1372,16 +1378,16 @@
           </div>
 
           <div class="callback-actions">
-            <button class="btn-copy-chip" onclick="window.SabrinaApp.copyPhone('${escapeHTML(c.phone || '')}')" title="Copy raw phone for Telus softphone">📞 Copy Phone</button>
-            <button class="btn-copy-chip" onclick="window.SabrinaApp.copyCbDetails('${c.id}')" title="Copy formatted text for SMS or Email">📋 Text</button>
-            <button class="btn-copy-chip" onclick="window.SabrinaApp.copyCbRowExcel('${c.id}')" title="Copy table row for Excel">📊 Excel Row</button>
+            <button class="btn-copy-chip" onclick="window.SabrinaApp.copyPhone(this.dataset.phone)" data-phone="${escapeHTML(c.phone || '')}" title="Copy raw phone for Telus softphone">📞 Copy Phone</button>
+            <button class="btn-copy-chip" onclick="window.SabrinaApp.copyCbDetails(this.dataset.id)" data-id="${escapeHTML(sanitizeId(c.id))}" title="Copy formatted text for SMS or Email">📋 Text</button>
+            <button class="btn-copy-chip" onclick="window.SabrinaApp.copyCbRowExcel(this.dataset.id)" data-id="${escapeHTML(sanitizeId(c.id))}" title="Copy table row for Excel">📊 Excel Row</button>
             ${c.status === 'PENDING' ? `
-              <button class="btn-copy-chip" style="background: #f1f5f9; color: #475569;" onclick="window.SabrinaApp.snoozeCb('${c.id}', -15)" title="Step back 15m">-15m</button>
-              <button class="btn-copy-chip" style="background: #fef3c7; color: #b45309; border-color: #f59e0b;" onclick="window.SabrinaApp.snoozeCb('${c.id}', 15)" title="Add 15m">+15m</button>
-              <button class="btn-copy-chip" style="background: #fef3c7; color: #b45309; border-color: #f59e0b;" onclick="window.SabrinaApp.snoozeCb('${c.id}', 60)" title="Add 1 hour">+1h</button>
-              <button class="btn-copy-chip" style="background: #dcfce7; color: #15803d; border-color: #22c55e; font-weight: 700;" onclick="window.SabrinaApp.completeCb('${c.id}')">✓ Done</button>
+              <button class="btn-copy-chip" style="background: #f1f5f9; color: #475569;" onclick="window.SabrinaApp.snoozeCb(this.dataset.id, -15)" data-id="${escapeHTML(sanitizeId(c.id))}" title="Step back 15m">-15m</button>
+              <button class="btn-copy-chip" style="background: #fef3c7; color: #b45309; border-color: #f59e0b;" onclick="window.SabrinaApp.snoozeCb(this.dataset.id, 15)" data-id="${escapeHTML(sanitizeId(c.id))}" title="Add 15m">+15m</button>
+              <button class="btn-copy-chip" style="background: #fef3c7; color: #b45309; border-color: #f59e0b;" onclick="window.SabrinaApp.snoozeCb(this.dataset.id, 60)" data-id="${escapeHTML(sanitizeId(c.id))}" title="Add 1 hour">+1h</button>
+              <button class="btn-copy-chip" style="background: #dcfce7; color: #15803d; border-color: #22c55e; font-weight: 700;" onclick="window.SabrinaApp.completeCb(this.dataset.id)" data-id="${escapeHTML(sanitizeId(c.id))}">✓ Done</button>
             ` : ''}
-            <button class="btn-danger-outline" onclick="window.SabrinaApp.deleteCb('${c.id}', this)" title="Delete entry" style="padding: 0.25rem 0.5rem; font-size: 0.85rem;">🗑️</button>
+            <button class="btn-danger-outline" onclick="window.SabrinaApp.deleteCb(this.dataset.id, this)" data-id="${escapeHTML(sanitizeId(c.id))}" title="Delete entry" style="padding: 0.25rem 0.5rem; font-size: 0.85rem;">🗑️</button>
           </div>
         </div>
       `;
@@ -1572,7 +1578,7 @@
           <td><strong>${formatHoursMinutes(g.totalDuration)}</strong></td>
           <td><span class="badge" style="background:#dcfce7; color:#15803d;">${g.totalAppts} Booked</span></td>
           <td>
-            <button class="btn-danger-outline" onclick="window.SabrinaApp.deleteDateShifts('${dateKey}', this)">Delete Day</button>
+            <button class="btn-danger-outline" onclick="window.SabrinaApp.deleteDateShifts(this.dataset.date, this)" data-date="${escapeHTML(dateKey)}">Delete Day</button>
           </td>
         </tr>
       `;
@@ -1881,8 +1887,8 @@
   // --- Backup & Restore ---
   function backupJSON() {
     const exportData = {
-      version: state.version || '1.5.0',
-      build: state.build || '2026.09.12-rev1',
+      version: state.version || '1.5.5',
+      build: state.build || '2026.09.14-rev2',
       exportedAt: new Date().toISOString(),
       settings: state.settings,
       shifts: state.shifts,
@@ -1909,11 +1915,21 @@
         const data = JSON.parse(e.target.result);
         if (data && (Array.isArray(data.shifts) || Array.isArray(data.callbacks) || Array.isArray(data.calls) || Array.isArray(data.salesReps))) {
           pushUndoSnapshot('Before JSON Restore');
-          if (Array.isArray(data.shifts)) state.shifts = data.shifts;
-          if (Array.isArray(data.callbacks)) state.callbacks = data.callbacks;
-          if (Array.isArray(data.calls)) state.calls = data.calls;
-          if (Array.isArray(data.salesReps)) state.salesReps = data.salesReps;
-          if (data.settings) state.settings = { ...state.settings, ...data.settings };
+          if (Array.isArray(data.shifts)) {
+            state.shifts = data.shifts.map(s => s && typeof s === 'object' ? { ...s, id: sanitizeId(s.id) || ('shift_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5)) } : s).filter(Boolean);
+          }
+          if (Array.isArray(data.callbacks)) {
+            state.callbacks = data.callbacks.map(c => c && typeof c === 'object' ? { ...c, id: sanitizeId(c.id) || ('cb_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5)) } : c).filter(Boolean);
+          }
+          if (Array.isArray(data.calls)) {
+            state.calls = data.calls.map(c => c && typeof c === 'object' ? { ...c, id: sanitizeId(c.id) || ('call_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5)) } : c).filter(Boolean);
+          }
+          if (Array.isArray(data.salesReps)) {
+            state.salesReps = data.salesReps.map(r => String(r || '').trim()).filter(Boolean);
+          }
+          if (data.settings && typeof data.settings === 'object') {
+            state.settings = { ...state.settings, ...data.settings };
+          }
           persistState();
           updateUI();
           showToast('Backup successfully restored!', 'success');
@@ -1997,8 +2013,8 @@
         id: 'snap_' + Date.now(),
         timestamp: Date.now(),
         label: label,
-        version: state.version || '1.5.0',
-        build: state.build || '2026.09.12-rev1',
+        version: state.version || '1.5.5',
+        build: state.build || '2026.09.14-rev2',
         formattedTime: format12HourTime(Date.now()),
         formattedDate: formatDateKey(getTorontoNow()),
         shiftsCount: (state.shifts || []).length,
@@ -2109,13 +2125,13 @@
 
   function updateVersionLabels() {
     const vBadge = document.getElementById('app-version-badge');
-    if (vBadge) vBadge.textContent = `v${state.version || '1.5.0'}`;
+    if (vBadge) vBadge.textContent = `v${state.version || '1.5.5'}`;
     const sBadge = document.getElementById('settings-version-badge');
-    if (sBadge) sBadge.textContent = `v${state.version || '1.5.0'}`;
+    if (sBadge) sBadge.textContent = `v${state.version || '1.5.5'}`;
     const bId = document.getElementById('settings-build-id');
-    if (bId) bId.textContent = state.build || '2026.09.11-rev2';
+    if (bId) bId.textContent = state.build || '2026.09.14-rev2';
     const rDate = document.getElementById('settings-release-date');
-    if (rDate) rDate.textContent = state.releaseDate || '2026-09-11';
+    if (rDate) rDate.textContent = state.releaseDate || '2026-09-14';
   }
 
   function handleCheckUpdates() {
@@ -2138,7 +2154,7 @@
           btn.disabled = false;
           btn.textContent = '🔄 Check for Updates / Pull Latest Code';
         }
-        const currentVer = state.version || '1.5.0';
+        const currentVer = state.version || '1.5.5';
         const isUpToDate = vData.version === currentVer && vData.build === state.build;
 
         let msg = `✅ Safe Snapshot Created!\n\n`;
@@ -2163,8 +2179,8 @@
               btn.disabled = false;
               btn.textContent = '🔄 Check for Updates / Pull Latest Code';
             }
-            showToast('Snapshot saved! Local version: v' + (vData.version || '1.5.0'), 'success');
-            alert(`✅ Pre-update snapshot saved!\n\nLocal Version: v${vData.version || '1.5.0'}\nGitHub Repo: github.com/basscleff-lab/Daily_Schedule\n\nRun Deploy_To_This_PC.bat to sync latest files.`);
+            showToast('Snapshot saved! Local version: v' + (vData.version || '1.5.5'), 'success');
+            alert(`✅ Pre-update snapshot saved!\n\nLocal Version: v${vData.version || '1.5.5'}\nGitHub Repo: github.com/basscleff-lab/Daily_Schedule\n\nRun Deploy_To_This_PC.bat to sync latest files.`);
           })
           .catch(() => {
             if (btn) {
