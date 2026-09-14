@@ -20,6 +20,7 @@ $script:callbacksFile = Join-Path $script:dataDir "callbacks.json"
 $script:callsFile = Join-Path $script:dataDir "calls.json"
 $script:salesRepsFile = Join-Path $script:dataDir "sales_reps.json"
 $script:deletedIdsFile = Join-Path $script:dataDir "deleted_ids.json"
+$script:lockFile = Join-Path $script:dataDir ".sync.lock"
 $script:backupDir = Join-Path $script:dataDir "backups"
 if (!(Test-Path $script:backupDir)) { New-Item -ItemType Directory -Path $script:backupDir -Force | Out-Null }
 $script:historyDir = Join-Path $script:dataDir "history"
@@ -602,6 +603,65 @@ $BtnActEmail.Add_Click({ Set-ActiveActivity "email_in" })
 $BtnActAdmin.Add_Click({ Set-ActiveActivity "off_phone_work" })
 $BtnActCallbacks.Add_Click({ Show-CallbackManager })
 
+function Acquire-SyncLock([string]$caller = "toolbar", [int]$maxWaitMs = 1500) {
+    $start = Get-NowEpochMs
+    while ((Get-NowEpochMs - $start) -lt $maxWaitMs) {
+        if (Test-Path $script:lockFile) {
+            try {
+                $raw = Get-Content $script:lockFile -Raw
+                if ($raw) {
+                    $lockData = $raw | ConvertFrom-Json
+                    $age = Get-NowEpochMs - [int64]$lockData.timestamp
+                    if ($age -gt 5000) {
+                        Remove-Item -Path $script:lockFile -Force -ErrorAction SilentlyContinue
+                    }
+                }
+            } catch {
+                Remove-Item -Path $script:lockFile -Force -ErrorAction SilentlyContinue
+            }
+        }
+
+        if (!(Test-Path $script:lockFile)) {
+            try {
+                $lockObj = @{ lockedBy = $caller; timestamp = Get-NowEpochMs }
+                $lockObj | ConvertTo-Json | Set-Content -Path $script:lockFile -Force -ErrorAction Stop
+                return $true
+            } catch {}
+        }
+        Start-Sleep -Milliseconds 50
+    }
+    return $false
+}
+
+function Release-SyncLock {
+    try {
+        if (Test-Path $script:lockFile) {
+            Remove-Item -Path $script:lockFile -Force -ErrorAction SilentlyContinue
+        }
+    } catch {}
+}
+
+function Write-AtomicJsonFile([string]$filePath, $data, [int]$depth = 5) {
+    try {
+        $tmpFile = $filePath + ".tmp." + [Guid]::NewGuid().ToString("N")
+        $json = if ($data -is [string]) { $data } else { @($data) | ConvertTo-Json -Depth $depth }
+        [System.IO.File]::WriteAllText($tmpFile, $json, [System.Text.Encoding]::UTF8)
+        Move-Item -Path $tmpFile -Destination $filePath -Force -ErrorAction Stop
+    } catch {
+        try {
+            if ($data -is [string]) {
+                Set-Content -Path $filePath -Value $data -Force
+            } else {
+                @($data) | ConvertTo-Json -Depth $depth | Set-Content -Path $filePath -Force
+            }
+        } catch {}
+    } finally {
+        if (Test-Path $tmpFile) {
+            Remove-Item -Path $tmpFile -Force -ErrorAction SilentlyContinue
+        }
+    }
+}
+
 function Export-LocalDataJs {
     try {
         $shiftsJson = "[]"
@@ -667,7 +727,7 @@ function Export-LocalDataJs {
         $themeStr = if ($script:state.Theme) { $script:state.Theme } else { "dark" }
         $jsContent = "window.SABRINA_LOCAL_DATA = { version: `"$($script:appVersion)`", build: `"$($script:appBuild)`", shifts: $shiftsJson, activeSession: $sessionJson, callbacks: $cbsJson, calls: $callsJson, salesReps: $salesRepsJson, deletedIds: $deletedIdsJson, history: $snapsJson, theme: `"$themeStr`" };"
         $jsPath = Join-Path $script:dataDir "shifts_data.js"
-        Set-Content -Path $jsPath -Value $jsContent -Force
+        Write-AtomicJsonFile $jsPath $jsContent
     } catch {}
 }
 
@@ -689,10 +749,14 @@ function Get-DeletedIdsMap {
 }
 
 function Save-DeletedIdsMap($map) {
+    $locked = Acquire-SyncLock
     try {
-        $map | ConvertTo-Json | Set-Content -Path $script:deletedIdsFile -Force
+        Write-AtomicJsonFile $script:deletedIdsFile $map 3
         Export-LocalDataJs
     } catch {}
+    finally {
+        if ($locked) { Release-SyncLock }
+    }
 }
 
 function Record-DeletedId($id) {
@@ -722,7 +786,7 @@ function Save-5MinSnapshot {
             calls = $calls
             salesReps = $reps
         }
-        $snapData | ConvertTo-Json -Depth 5 | Set-Content -Path $snapFile -Force
+        Write-AtomicJsonFile $snapFile $snapData 5
 
         # Prune old snapshots - keep most recent 24 (past 2 hours)
         $allSnaps = Get-ChildItem -Path $script:historyDir -Filter "snapshot_*.json" | Sort-Object LastWriteTime -Descending
@@ -744,16 +808,20 @@ function Get-SalesRepsList {
         } catch {}
     }
     try {
-        @($script:defaultSalesReps) | ConvertTo-Json | Set-Content -Path $script:salesRepsFile -Force
+        Write-AtomicJsonFile $script:salesRepsFile @($script:defaultSalesReps) 3
     } catch {}
     return @($script:defaultSalesReps)
 }
 
 function Save-SalesRepsList($reps) {
+    $locked = Acquire-SyncLock
     try {
-        @($reps) | ConvertTo-Json | Set-Content -Path $script:salesRepsFile -Force
+        Write-AtomicJsonFile $script:salesRepsFile @($reps) 3
         Export-LocalDataJs
     } catch {}
+    finally {
+        if ($locked) { Release-SyncLock }
+    }
 }
 
 function Get-CallsList {
@@ -770,11 +838,14 @@ function Get-CallsList {
 }
 
 function Save-CallsList($calls) {
+    $locked = Acquire-SyncLock
     try {
-        $callsArray = @($calls)
-        $callsArray | ConvertTo-Json -Depth 5 | Set-Content -Path $script:callsFile -Force
+        Write-AtomicJsonFile $script:callsFile @($calls) 5
         Export-LocalDataJs
     } catch {}
+    finally {
+        if ($locked) { Release-SyncLock }
+    }
 }
 
 function Get-CallbacksList {
@@ -791,11 +862,14 @@ function Get-CallbacksList {
 }
 
 function Save-CallbacksList($cbs) {
+    $locked = Acquire-SyncLock
     try {
-        $cbsArray = @($cbs)
-        $cbsArray | ConvertTo-Json -Depth 5 | Set-Content -Path $script:callbacksFile -Force
+        Write-AtomicJsonFile $script:callbacksFile @($cbs) 5
         Export-LocalDataJs
     } catch {}
+    finally {
+        if ($locked) { Release-SyncLock }
+    }
 }
 
 function Get-PendingDueCallbacks {
@@ -2409,9 +2483,14 @@ function Show-CallbackManager {
 # Session state saver
 function Save-SessionState {
     $script:state.UpdatedAt = Get-NowEpochMs
-    $json = $script:state | ConvertTo-Json -Depth 4
-    Set-Content -Path $script:sessionFile -Value $json -Force
-    Export-LocalDataJs
+    $locked = Acquire-SyncLock
+    try {
+        Write-AtomicJsonFile $script:sessionFile $script:state 4
+        Export-LocalDataJs
+    } catch {}
+    finally {
+        if ($locked) { Release-SyncLock }
+    }
 }
 
 function Get-ActiveSeconds {
@@ -2532,7 +2611,13 @@ $BtnStop.Add_Click({
             }
 
             $shiftsList = @($newShift) + @($shiftsList)
-            @($shiftsList) | ConvertTo-Json -Depth 5 | Set-Content -Path $script:dataFile -Force
+            $locked = Acquire-SyncLock
+            try {
+                Write-AtomicJsonFile $script:dataFile $shiftsList 5
+            } catch {}
+            finally {
+                if ($locked) { Release-SyncLock }
+            }
 
             # Automatic timestamped backup
             try {

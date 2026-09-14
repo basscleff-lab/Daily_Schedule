@@ -480,6 +480,48 @@
     return null;
   }
 
+  async function acquireDiskLock(maxWaitMs = 1500) {
+    if (!diskDirectoryHandle) return true;
+    const start = Date.now();
+    while (Date.now() - start < maxWaitMs) {
+      try {
+        const lockHandle = await diskDirectoryHandle.getFileHandle('.sync.lock', { create: false });
+        const file = await lockHandle.getFile();
+        const text = await file.text();
+        if (text) {
+          const lockData = JSON.parse(text);
+          const age = Date.now() - (lockData.timestamp || 0);
+          if (age > 5000) {
+            await diskDirectoryHandle.removeEntry('.sync.lock').catch(() => {});
+          } else {
+            await new Promise(r => setTimeout(r, 50));
+            continue;
+          }
+        }
+      } catch (e) {
+        // Lock file does not exist
+      }
+
+      try {
+        const lockHandle = await diskDirectoryHandle.getFileHandle('.sync.lock', { create: true });
+        const writable = await lockHandle.createWritable();
+        await writable.write(JSON.stringify({ lockedBy: 'dashboard', timestamp: Date.now() }));
+        await writable.close();
+        return true;
+      } catch (e) {
+        await new Promise(r => setTimeout(r, 50));
+      }
+    }
+    return false;
+  }
+
+  async function releaseDiskLock() {
+    if (!diskDirectoryHandle) return;
+    try {
+      await diskDirectoryHandle.removeEntry('.sync.lock');
+    } catch (e) {}
+  }
+
   async function connectDiskDirectory() {
     if (!window.showDirectoryPicker) {
       showToast('File System Access API is not supported in this browser. Use Export / Import below.', 'warn');
@@ -503,6 +545,7 @@
 
   async function writeStateToDiskDirectory() {
     if (!diskDirectoryHandle) return;
+    const locked = await acquireDiskLock();
     try {
       updateDiskSyncUI('Reconciling & Writing...', '#f59e0b');
 
@@ -668,6 +711,10 @@
     } catch (e) {
       console.warn('Disk auto-sync write error:', e);
       updateDiskSyncUI('Sync Warning', '#f59e0b');
+    } finally {
+      if (locked) {
+        await releaseDiskLock();
+      }
     }
   }
 
