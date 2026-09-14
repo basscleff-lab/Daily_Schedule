@@ -367,6 +367,21 @@
 
   // --- Direct File System Access API Bridge ---
 
+  async function readDiskJsonFile(fileName) {
+    if (!diskDirectoryHandle) return null;
+    try {
+      const fileHandle = await diskDirectoryHandle.getFileHandle(fileName, { create: false });
+      const file = await fileHandle.getFile();
+      const text = await file.text();
+      if (text && text.trim().length > 0) {
+        return JSON.parse(text);
+      }
+    } catch (e) {
+      // File may not exist yet or not valid JSON
+    }
+    return null;
+  }
+
   async function connectDiskDirectory() {
     if (!window.showDirectoryPicker) {
       showToast('File System Access API is not supported in this browser. Use Export / Import below.', 'warn');
@@ -391,9 +406,121 @@
   async function writeStateToDiskDirectory() {
     if (!diskDirectoryHandle) return;
     try {
-      updateDiskSyncUI('Writing to Disk...', '#f59e0b');
+      updateDiskSyncUI('Reconciling & Writing...', '#f59e0b');
 
-      // Helper to write JSON file to directory
+      // 1. Read and merge disk tombstones first
+      const diskDeleted = await readDiskJsonFile('deleted_ids.json');
+      if (diskDeleted && typeof diskDeleted === 'object') {
+        if (!state.deletedIds || typeof state.deletedIds !== 'object') state.deletedIds = {};
+        Object.keys(diskDeleted).forEach(k => {
+          state.deletedIds[k] = Math.max(state.deletedIds[k] || 0, diskDeleted[k] || 0);
+        });
+      }
+
+      // 2. Read and reconcile disk Shifts
+      const diskShifts = await readDiskJsonFile('shifts.json');
+      if (Array.isArray(diskShifts)) {
+        const localShiftMap = new Map((state.shifts || []).filter(s => !isItemDeleted(s)).map(s => [s.id, s]));
+        const mergedShifts = [];
+
+        diskShifts.forEach(ds => {
+          if (!ds || !ds.id || isItemDeleted(ds)) return;
+          const local = localShiftMap.get(ds.id);
+          if (!local) {
+            mergedShifts.push(ds);
+          } else {
+            const diskUpdated = ds.updatedAt || ds.endTime || ds.startTime || 0;
+            const localUpdated = local.updatedAt || local.endTime || local.startTime || 0;
+            if (diskUpdated >= localUpdated) {
+              mergedShifts.push({ ...local, ...ds });
+            } else {
+              mergedShifts.push({ ...ds, ...local });
+            }
+            localShiftMap.delete(ds.id);
+          }
+        });
+
+        localShiftMap.forEach(loc => {
+          if (!isItemDeleted(loc)) mergedShifts.push(loc);
+        });
+        state.shifts = mergedShifts.filter(s => !isItemDeleted(s));
+      } else {
+        state.shifts = (state.shifts || []).filter(s => !isItemDeleted(s));
+      }
+
+      // 3. Read and reconcile disk Callbacks
+      const diskCbs = await readDiskJsonFile('callbacks.json');
+      if (Array.isArray(diskCbs)) {
+        const localCbMap = new Map((state.callbacks || []).filter(c => !isItemDeleted(c)).map(c => [c.id, c]));
+        const mergedCbs = [];
+
+        diskCbs.forEach(dc => {
+          if (!dc || !dc.id || isItemDeleted(dc)) return;
+          const local = localCbMap.get(dc.id);
+          if (!local) {
+            mergedCbs.push(dc);
+          } else {
+            const diskUpdated = dc.updatedAt || (typeof dc.completedAt === 'number' ? dc.completedAt : (dc.completedAt ? new Date(dc.completedAt).getTime() : 0)) || (typeof dc.createdAt === 'number' ? dc.createdAt : (dc.createdAt ? new Date(dc.createdAt).getTime() : 0)) || 0;
+            const localUpdated = local.updatedAt || (typeof local.completedAt === 'number' ? local.completedAt : (local.completedAt ? new Date(local.completedAt).getTime() : 0)) || (typeof local.createdAt === 'number' ? local.createdAt : (local.createdAt ? new Date(local.createdAt).getTime() : 0)) || 0;
+            if (diskUpdated >= localUpdated) {
+              mergedCbs.push({ ...local, ...dc });
+            } else {
+              mergedCbs.push({ ...dc, ...local });
+            }
+            localCbMap.delete(dc.id);
+          }
+        });
+
+        localCbMap.forEach(loc => {
+          if (!isItemDeleted(loc)) mergedCbs.push(loc);
+        });
+        state.callbacks = mergedCbs.filter(c => !isItemDeleted(c));
+      } else {
+        state.callbacks = (state.callbacks || []).filter(c => !isItemDeleted(c));
+      }
+
+      // 4. Read and reconcile disk Calls
+      const diskCalls = await readDiskJsonFile('calls.json');
+      if (Array.isArray(diskCalls)) {
+        const localCallMap = new Map((state.calls || []).filter(c => !isItemDeleted(c)).map(c => [c.id, c]));
+        const mergedCalls = [];
+
+        diskCalls.forEach(dcall => {
+          if (!dcall || !dcall.id || isItemDeleted(dcall)) return;
+          const local = localCallMap.get(dcall.id);
+          if (!local) {
+            mergedCalls.push(dcall);
+          } else {
+            const diskUpdated = dcall.updatedAt || (typeof dcall.createdAt === 'number' ? dcall.createdAt : 0) || 0;
+            const localUpdated = local.updatedAt || (typeof local.createdAt === 'number' ? local.createdAt : 0) || 0;
+            if (diskUpdated >= localUpdated) {
+              mergedCalls.push({ ...local, ...dcall });
+            } else {
+              mergedCalls.push({ ...dcall, ...local });
+            }
+            localCallMap.delete(dcall.id);
+          }
+        });
+
+        localCallMap.forEach(loc => {
+          if (!isItemDeleted(loc)) mergedCalls.push(loc);
+        });
+        state.calls = mergedCalls.filter(c => !isItemDeleted(c));
+      } else {
+        state.calls = (state.calls || []).filter(c => !isItemDeleted(c));
+      }
+
+      // 5. Read and reconcile disk Sales Reps
+      const diskReps = await readDiskJsonFile('sales_reps.json');
+      if (Array.isArray(diskReps) && diskReps.length > 0) {
+        diskReps.forEach(r => {
+          if (r && !state.salesReps.includes(r)) {
+            state.salesReps.push(r);
+          }
+        });
+      }
+
+      // 6. Write reconciled data back to disk files
       const writeFile = async (fileName, dataObj, isJs = false) => {
         const fileHandle = await diskDirectoryHandle.getFileHandle(fileName, { create: true });
         const writable = await fileHandle.createWritable();
@@ -411,7 +538,17 @@
       const jsContent = `window.SABRINA_LOCAL_DATA = { version: "${state.version}", build: "${state.build}", shifts: ${JSON.stringify(state.shifts || [])}, activeSession: ${JSON.stringify(state.activeSession)}, callbacks: ${JSON.stringify(state.callbacks || [])}, calls: ${JSON.stringify(state.calls || [])}, salesReps: ${JSON.stringify(state.salesReps || DEFAULT_SALES_REPS)}, deletedIds: ${JSON.stringify(state.deletedIds || {})}, history: ${JSON.stringify(state.snapshots.slice(0, 12))}, theme: "${state.theme || 'dark'}" };`;
       await writeFile('shifts_data.js', jsContent, true);
 
+      // Keep localStorage in sync with reconciled data
+      try {
+        localStorage.setItem(STORAGE_KEYS.SHIFTS, JSON.stringify(state.shifts));
+        localStorage.setItem(STORAGE_KEYS.CALLBACKS, JSON.stringify(state.callbacks));
+        localStorage.setItem(STORAGE_KEYS.CALLS, JSON.stringify(state.calls));
+        localStorage.setItem(STORAGE_KEYS.SALES_REPS, JSON.stringify(state.salesReps));
+        localStorage.setItem(STORAGE_KEYS.DELETED_IDS, JSON.stringify(state.deletedIds || {}));
+      } catch (e) {}
+
       updateDiskSyncUI('Connected & Synced', '#22c55e');
+      updateUI();
     } catch (e) {
       console.warn('Disk auto-sync write error:', e);
       updateDiskSyncUI('Sync Warning', '#f59e0b');
