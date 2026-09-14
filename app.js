@@ -38,9 +38,9 @@
 
   // --- Application State ---
   let state = {
-    version: '1.5.0',
-    build: '2026.09.12-rev1',
-    releaseDate: '2026-09-12',
+    version: '1.5.5',
+    build: '2026.09.14-rev1',
+    releaseDate: '2026-09-14',
     settings: {
       contractorName: 'Contractor',
       clientName: 'Client Company',
@@ -184,44 +184,99 @@
       }
       if (!Array.isArray(state.snapshots)) state.snapshots = [];
 
-      // Merge data from native floating toolbar file if present
+      // Reconcile data from native floating toolbar (data/shifts_data.js) if present
       if (window.SABRINA_LOCAL_DATA) {
         if (window.SABRINA_LOCAL_DATA.version) state.version = window.SABRINA_LOCAL_DATA.version;
         if (window.SABRINA_LOCAL_DATA.build) state.build = window.SABRINA_LOCAL_DATA.build;
 
+        // 1. Reconcile Shifts
         let fileShifts = window.SABRINA_LOCAL_DATA.shifts;
         if (fileShifts) {
           if (!Array.isArray(fileShifts)) fileShifts = [fileShifts];
-          if (!Array.isArray(state.shifts)) state.shifts = [];
-          const existingIds = new Set(state.shifts.map(s => s.id));
+          const localShiftMap = new Map((state.shifts || []).map(s => [s.id, s]));
+          const mergedShifts = [];
+
           fileShifts.forEach(fs => {
-            if (fs && fs.id && !existingIds.has(fs.id)) {
-              state.shifts.unshift(fs);
-              existingIds.add(fs.id);
+            if (!fs || !fs.id) return;
+            const local = localShiftMap.get(fs.id);
+            if (!local) {
+              mergedShifts.push(fs);
+            } else {
+              const fileUpdated = fs.updatedAt || fs.endTime || 0;
+              const localUpdated = local.updatedAt || local.endTime || 0;
+              if (fileUpdated >= localUpdated) {
+                mergedShifts.push({ ...local, ...fs });
+              } else {
+                mergedShifts.push({ ...fs, ...local });
+              }
+              localShiftMap.delete(fs.id);
             }
           });
+
+          localShiftMap.forEach(loc => mergedShifts.push(loc));
+          state.shifts = mergedShifts;
         }
+
+        // 2. Reconcile Today's Appts
         if (window.SABRINA_LOCAL_DATA.activeSession && typeof window.SABRINA_LOCAL_DATA.activeSession.TodayAppts === 'number') {
           state.todayAppts = Math.max(state.todayAppts || 0, window.SABRINA_LOCAL_DATA.activeSession.TodayAppts);
         }
+
+        // 3. Reconcile Callbacks (Bidirectional status & field updates)
         if (window.SABRINA_LOCAL_DATA.callbacks && Array.isArray(window.SABRINA_LOCAL_DATA.callbacks)) {
-          const existingCbIds = new Set(state.callbacks.map(c => c.id));
-          window.SABRINA_LOCAL_DATA.callbacks.forEach(c => {
-            if (c && c.id && !existingCbIds.has(c.id)) {
-              state.callbacks.unshift(c);
-              existingCbIds.add(c.id);
+          const fileCbs = window.SABRINA_LOCAL_DATA.callbacks;
+          const localCbMap = new Map((state.callbacks || []).map(c => [c.id, c]));
+          const mergedCbs = [];
+
+          fileCbs.forEach(fc => {
+            if (!fc || !fc.id) return;
+            const local = localCbMap.get(fc.id);
+            if (!local) {
+              mergedCbs.push(fc);
+            } else {
+              const fileUpdated = fc.updatedAt || fc.completedAt || fc.createdAt || 0;
+              const localUpdated = local.updatedAt || (local.completedAt ? (typeof local.completedAt === 'number' ? local.completedAt : new Date(local.completedAt).getTime()) : 0) || (local.createdAt ? (typeof local.createdAt === 'number' ? local.createdAt : new Date(local.createdAt).getTime()) : 0) || 0;
+              if (fileUpdated >= localUpdated) {
+                mergedCbs.push({ ...local, ...fc });
+              } else {
+                mergedCbs.push({ ...fc, ...local });
+              }
+              localCbMap.delete(fc.id);
             }
           });
+
+          localCbMap.forEach(loc => mergedCbs.push(loc));
+          state.callbacks = mergedCbs;
         }
+
+        // 4. Reconcile Call Logs
         if (window.SABRINA_LOCAL_DATA.calls && Array.isArray(window.SABRINA_LOCAL_DATA.calls)) {
-          const existingCallIds = new Set(state.calls.map(c => c.id));
-          window.SABRINA_LOCAL_DATA.calls.forEach(c => {
-            if (c && c.id && !existingCallIds.has(c.id)) {
-              state.calls.unshift(c);
-              existingCallIds.add(c.id);
+          const fileCalls = window.SABRINA_LOCAL_DATA.calls;
+          const localCallMap = new Map((state.calls || []).map(c => [c.id, c]));
+          const mergedCalls = [];
+
+          fileCalls.forEach(fcall => {
+            if (!fcall || !fcall.id) return;
+            const local = localCallMap.get(fcall.id);
+            if (!local) {
+              mergedCalls.push(fcall);
+            } else {
+              const fileUpdated = fcall.updatedAt || 0;
+              const localUpdated = local.updatedAt || 0;
+              if (fileUpdated >= localUpdated) {
+                mergedCalls.push({ ...local, ...fcall });
+              } else {
+                mergedCalls.push({ ...fcall, ...local });
+              }
+              localCallMap.delete(fcall.id);
             }
           });
+
+          localCallMap.forEach(loc => mergedCalls.push(loc));
+          state.calls = mergedCalls;
         }
+
+        // 5. Reconcile Sales Reps
         if (window.SABRINA_LOCAL_DATA.salesReps && Array.isArray(window.SABRINA_LOCAL_DATA.salesReps) && window.SABRINA_LOCAL_DATA.salesReps.length > 0) {
           window.SABRINA_LOCAL_DATA.salesReps.forEach(r => {
             if (r && !state.salesReps.includes(r)) {
@@ -229,6 +284,8 @@
             }
           });
         }
+
+        // 6. Reconcile History / Snapshots
         if (window.SABRINA_LOCAL_DATA.history && Array.isArray(window.SABRINA_LOCAL_DATA.history)) {
           window.SABRINA_LOCAL_DATA.history.forEach(h => {
             if (!state.snapshots.some(s => s.timestamp === h.timestamp || (s.file && s.file === h.file))) {
@@ -422,13 +479,60 @@
     return totalSecs;
   }
 
+  // Calculate active session breakdown: maps activityTimeMap + unrecorded live interval since lastActivitySwitchTime
+  function getActiveSessionBreakdown() {
+    if (!state.activeSession) {
+      return { phoneSecs: 0, offPhoneSecs: 0, totalSecs: 0, breakdown: {} };
+    }
+
+    const breakdown = {};
+    const map = state.activeSession.activityTimeMap || {};
+    for (const [k, v] of Object.entries(map)) {
+      breakdown[k] = (breakdown[k] || 0) + (typeof v === 'number' ? v : 0);
+    }
+
+    const currentAct = state.activeSession.currentActivity || 'off_phone_work';
+    let unrecorded = 0;
+    const lastSwitch = state.activeSession.lastActivitySwitchTime || state.activeSession.startTime;
+
+    if (state.activeSession.status === 'RUNNING') {
+      unrecorded = Math.max(0, Math.floor((Date.now() - lastSwitch) / 1000));
+    } else if (state.activeSession.status === 'PAUSED') {
+      const pausedAt = state.activeSession.pauseStartTime || Date.now();
+      unrecorded = Math.max(0, Math.floor((pausedAt - lastSwitch) / 1000));
+    }
+
+    breakdown[currentAct] = (breakdown[currentAct] || 0) + unrecorded;
+
+    let phoneSecs = 0;
+    let offPhoneSecs = 0;
+    let totalSecs = 0;
+
+    for (const [k, v] of Object.entries(breakdown)) {
+      totalSecs += v;
+      if (ACTIVITY_NAMES[k]?.isPhone) {
+        phoneSecs += v;
+      } else {
+        offPhoneSecs += v;
+      }
+    }
+
+    const grossSecs = getActiveSessionSeconds();
+    if (totalSecs < grossSecs) {
+      offPhoneSecs += (grossSecs - totalSecs);
+      totalSecs = grossSecs;
+    }
+
+    return { phoneSecs, offPhoneSecs, totalSecs, breakdown };
+  }
+
   // Calculate today's phone vs off-phone seconds
   function getTodayBreakdown() {
     const todayKey = formatDateKey(getTorontoNow());
     let phoneSecs = 0;
     let offPhoneSecs = 0;
 
-    state.shifts.forEach(shift => {
+    (state.shifts || []).forEach(shift => {
       if (shift.date === todayKey) {
         phoneSecs += shift.phoneSeconds || 0;
         offPhoneSecs += shift.offPhoneSeconds || 0;
@@ -436,11 +540,9 @@
     });
 
     if (state.activeSession) {
-      const actMap = state.activeSession.activityTimeMap || {};
-      for (const [k, v] of Object.entries(actMap)) {
-        if (ACTIVITY_NAMES[k]?.isPhone) phoneSecs += v;
-        else offPhoneSecs += v;
-      }
+      const activeBreakdown = getActiveSessionBreakdown();
+      phoneSecs += activeBreakdown.phoneSecs;
+      offPhoneSecs += activeBreakdown.offPhoneSecs;
     }
 
     return { phoneSecs, offPhoneSecs };
@@ -702,13 +804,12 @@
     let phoneSec = dayShifts.reduce((sum, s) => sum + (s.phoneSeconds || 0), 0);
     let offPhoneSec = dayShifts.reduce((sum, s) => sum + (s.offPhoneSeconds || 0), 0);
 
-    // If selDateKey is today and active session is running, add live time
+    // If selDateKey is today and active session is running/paused, add live time from breakdown
     if (selDateKey === formatDateKey(getTorontoNow()) && state.activeSession) {
-      const liveSec = getActiveSessionSeconds();
-      totalSec += liveSec;
-      const curPhone = isPhoneActivity(state.activeSession.currentActivity);
-      if (curPhone) phoneSec += liveSec;
-      else offPhoneSec += liveSec;
+      const activeBreakdown = getActiveSessionBreakdown();
+      totalSec += activeBreakdown.totalSecs;
+      phoneSec += activeBreakdown.phoneSecs;
+      offPhoneSec += activeBreakdown.offPhoneSecs;
     }
 
     const totalHoursEl = document.getElementById('report-total-hours');

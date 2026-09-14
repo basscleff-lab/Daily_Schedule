@@ -1,0 +1,514 @@
+﻿<!DOCTYPE html>
+<html lang=en>
+<head>
+  <meta charset=UTF-8>
+  <meta name=viewport content=width=device-width, initial-scale=1.0>
+  <title>Mini Work Tracker</title>
+  <link rel=stylesheet href=styles.css>
+  <style>
+    body {
+      margin: 0;
+      padding: 8px 10px;
+      min-height: 100vh;
+      box-sizing: border-box;
+      background: var(--transport-bg, #0f172a);
+      color: var(--transport-text, #f8fafc);
+      font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica Neue, Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      overflow: hidden;
+      user-select: none;
+    }
+    .mini-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 6px;
+      font-size: 0.8rem;
+    }
+    .mini-clock {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--primary, #38bdf8);
+      font-family: Courier New, Courier, monospace;
+    }
+    .mini-status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 2px 7px;
+      border-radius: 9999px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      background: #1e293b;
+      color: #94a3b8;
+      border: 1px solid #334155;
+    }
+    .mini-status-pill.running {
+      background: rgba(34, 197, 94, 0.15);
+      color: #4ade80;
+      border-color: #22c55e;
+    }
+    .mini-status-pill.paused {
+      background: rgba(245, 158, 11, 0.15);
+      color: #fbbf24;
+      border-color: #f59e0b;
+    }
+    .mini-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #64748b;
+    }
+    .mini-status-pill.running .mini-dot { background: #22c55e; }
+    .mini-status-pill.paused .mini-dot { background: #f59e0b; }
+    .mini-main {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+    .mini-btn-group {
+      display: flex;
+      gap: 5px;
+    }
+    .mini-btn {
+      border: none;
+      border-radius: 5px;
+      padding: 6px 10px;
+      font-weight: 700;
+      font-size: 0.78rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.15s ease;
+    }
+    .mini-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .mini-btn-rec {
+      background: #16a34a;
+      color: white;
+    }
+    .mini-btn-pause {
+      background: #d97706;
+      color: white;
+    }
+    .mini-btn-stop {
+      background: #dc2626;
+      color: white;
+    }
+    .mini-readout {
+      background: #090d16;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      padding: 3px 8px;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+    }
+    .mini-readout-item {
+      text-align: center;
+    }
+    .mini-readout-label {
+      font-size: 0.62rem;
+      color: #64748b;
+      text-transform: uppercase;
+      font-weight: 700;
+      display: block;
+    }
+    .mini-readout-val {
+      font-family: Courier New, Courier, monospace;
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #38bdf8;
+    }
+    .mini-readout-val.today {
+      color: #4ade80;
+    }
+    .mini-activities {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr) auto;
+      gap: 4px;
+    }
+    .mini-act-btn {
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: #cbd5e1;
+      font-size: 0.68rem;
+      font-weight: 600;
+      padding: 4px 2px;
+      border-radius: 4px;
+      cursor: pointer;
+      text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      transition: all 0.15s;
+    }
+    .mini-act-btn.active {
+      background: #0284c7;
+      color: #ffffff;
+      border-color: #38bdf8;
+      font-weight: 700;
+    }
+    .mini-appt-badge {
+      background: #090d16;
+      border: 1px solid #334155;
+      border-radius: 4px;
+      padding: 2px 6px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: #4ade80;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body data-theme=dark>
+
+  <div class=mini-header>
+    <div class=mini-status-pill id=mini-status-pill>
+      <span class=mini-dot></span>
+      <span id=mini-status-text>OFFLINE</span>
+    </div>
+    <div class=mini-clock id=mini-live-clock>12:00:00 PM</div>
+    <div style=display: flex; align-items: center; gap: 4px;>
+      <button class=mini-appt-badge id=mini-btn-appt title=Book Appointment (+1)>
+        <span>APPT:</span>
+        <span id=mini-appt-count>0</span>
+        <span style=color: #22c55e; font-weight: 900;>+</span>
+      </button>
+      <button id=mini-btn-theme style=background: transparent; border: 1px solid #334155; color: #94a3b8; border-radius: 4px; padding: 2px 5px; cursor: pointer; font-size: 0.7rem; title=Switch Theme>🎨</button>
+    </div>
+  </div>
+
+  <div class=mini-main>
+    <div class=mini-btn-group>
+      <button class=mini-btn mini-btn-rec id=mini-btn-start>● REC</button>
+      <button class=mini-btn mini-btn-pause id=mini-btn-pause disabled>⏸</button>
+      <button class=mini-btn mini-btn-stop id=mini-btn-stop disabled>⏹</button>
+    </div>
+    <div class=mini-readout>
+      <div class=mini-readout-item>
+        <span class=mini-readout-label>Session</span>
+        <span class=mini-readout-val id=mini-session-val>00:00:00</span>
+      </div>
+      <div style=width: 1px; height: 24px; background: #334155;></div>
+      <div class=mini-readout-item>
+        <span class=mini-readout-label>Today</span>
+        <span class=mini-readout-val today id=mini-today-val>0h 00m</span>
+      </div>
+    </div>
+  </div>
+
+  <div class=mini-activities>
+    <button class=mini-act-btn data-act=inbound_call title=Inbound Call>📞 Inbound</button>
+    <button class=mini-act-btn data-act=outbound_call title=Outbound Call>📱 Outbound</button>
+    <button class=mini-act-btn data-act=text_sms title=Text SMS>💬 SMS</button>
+    <button class=mini-act-btn data-act=email_in title=Email>✉️ Email</button>
+    <button class=mini-act-btn active data-act=off_phone_work title=Off-Phone / Admin>📋 Admin</button>
+  </div>
+
+  <script>
+    (function() {
+      const STORAGE_KEYS = {
+        SHIFTS: 'tracker_shifts_v1',
+        ACTIVE_SESSION: 'tracker_active_session_v1',
+        SETTINGS: 'tracker_settings_v1',
+        TODAY_APPTS: 'tracker_today_appts_v1',
+        THEME: 'tracker_theme_v1'
+      };
+
+      const syncChannel = window.BroadcastChannel ? new BroadcastChannel('tracker_sync_channel') : null;
+
+      let state = {
+        shifts: [],
+        activeSession: null,
+        todayAppts: 0,
+        theme: 'dark'
+      };
+
+      function getTorontoNow() { return new Date(); }
+      function formatDateKey(d) {
+        const dateObj = new Date(d);
+        const y = dateObj.toLocaleDateString('en-CA', { timeZone: 'America/Toronto', year: 'numeric' });
+        const m = dateObj.toLocaleDateString('en-CA', { timeZone: 'America/Toronto', month: '2-digit' });
+        const day = dateObj.toLocaleDateString('en-CA', { timeZone: 'America/Toronto', day: '2-digit' });
+        return ${y}--;
+      }
+
+      function formatStopwatch(secs) {
+        const h = Math.floor(secs / 3600);
+        const m = Math.floor((secs % 3600) / 60);
+        const s = secs % 60;
+        return ${h.toString().padStart(2, '0')}::;
+      }
+
+      function formatHoursMinutes(secs) {
+        const h = Math.floor(secs / 3600);
+        const m = Math.floor((secs % 3600) / 60);
+        return ${h}h m;
+      }
+
+      function loadState() {
+        try {
+          const s = localStorage.getItem(STORAGE_KEYS.SHIFTS);
+          if (s) state.shifts = JSON.parse(s);
+          const a = localStorage.getItem(STORAGE_KEYS.ACTIVE_SESSION);
+          state.activeSession = a ? JSON.parse(a) : null;
+          const ap = localStorage.getItem(STORAGE_KEYS.TODAY_APPTS);
+          if (ap) {
+            const p = JSON.parse(ap);
+            if (p.date === formatDateKey(getTorontoNow())) state.todayAppts = p.count || 0;
+          }
+          const t = localStorage.getItem(STORAGE_KEYS.THEME) || 'dark';
+          state.theme = t;
+          document.body.setAttribute('data-theme', t);
+        } catch(e) {}
+      }
+
+      function saveState() {
+        try {
+          localStorage.setItem(STORAGE_KEYS.SHIFTS, JSON.stringify(state.shifts));
+          localStorage.setItem(STORAGE_KEYS.ACTIVE_SESSION, JSON.stringify(state.activeSession));
+          localStorage.setItem(STORAGE_KEYS.TODAY_APPTS, JSON.stringify({
+            date: formatDateKey(getTorontoNow()),
+            count: state.todayAppts
+          }));
+          localStorage.setItem(STORAGE_KEYS.THEME, state.theme);
+          if (syncChannel) syncChannel.postMessage({ type: 'SYNC_STATE', timestamp: Date.now() });
+        } catch(e) {}
+      }
+
+      function getActiveSeconds() {
+        if (!state.activeSession) return 0;
+        const now = Date.now();
+        let gross = 0;
+        if (state.activeSession.status === 'RUNNING') {
+          gross = (now - state.activeSession.startTime) - (state.activeSession.totalPausedMs || 0);
+        } else if (state.activeSession.status === 'PAUSED') {
+          const pausedAt = state.activeSession.pauseStartTime || now;
+          gross = (pausedAt - state.activeSession.startTime) - (state.activeSession.totalPausedMs || 0);
+        }
+        return Math.max(0, Math.floor(gross / 1000));
+      }
+
+      function getTodaySeconds() {
+        const todayKey = formatDateKey(getTorontoNow());
+        let total = 0;
+        (state.shifts || []).forEach(s => {
+          if (s.date === todayKey) total += (s.durationSeconds || 0);
+        });
+        total += getActiveSeconds();
+        return total;
+      }
+
+      function updateUI() {
+        const isRunning = state.activeSession && state.activeSession.status === 'RUNNING';
+        const isPaused = state.activeSession && state.activeSession.status === 'PAUSED';
+
+        const pill = document.getElementById('mini-status-pill');
+        const txt = document.getElementById('mini-status-text');
+        const btnStart = document.getElementById('mini-btn-start');
+        const btnPause = document.getElementById('mini-btn-pause');
+        const btnStop = document.getElementById('mini-btn-stop');
+        const apptCount = document.getElementById('mini-appt-count');
+
+        if (apptCount) apptCount.textContent = state.todayAppts;
+
+        if (isRunning) {
+          pill.className = 'mini-status-pill running';
+          txt.textContent = 'REC (ON)';
+          btnStart.disabled = true;
+          btnStart.textContent = '● REC';
+          btnPause.disabled = false;
+          btnStop.disabled = false;
+        } else if (isPaused) {
+          pill.className = 'mini-status-pill paused';
+          txt.textContent = 'PAUSED';
+          btnStart.disabled = false;
+          btnStart.textContent = '▶ RESUME';
+          btnPause.disabled = true;
+          btnStop.disabled = false;
+        } else {
+          pill.className = 'mini-status-pill';
+          txt.textContent = 'OFFLINE';
+          btnStart.disabled = false;
+          btnStart.textContent = '● REC';
+          btnPause.disabled = true;
+          btnStop.disabled = true;
+        }
+
+        const curAct = (state.activeSession && state.activeSession.currentActivity) || 'off_phone_work';
+        document.querySelectorAll('.mini-act-btn').forEach(btn => {
+          btn.classList.toggle('active', btn.dataset.act === curAct);
+        });
+
+        document.getElementById('mini-session-val').textContent = formatStopwatch(getActiveSeconds());
+        document.getElementById('mini-today-val').textContent = formatHoursMinutes(getTodaySeconds());
+      }
+
+      function updateClock() {
+        const now = getTorontoNow();
+        const el = document.getElementById('mini-live-clock');
+        if (el) {
+          el.textContent = now.toLocaleTimeString('en-US', {
+            timeZone: 'America/Toronto',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: true
+          });
+        }
+      }
+
+      // Event handlers
+      document.getElementById('mini-btn-start')?.addEventListener('click', () => {
+        const now = Date.now();
+        if (!state.activeSession || state.activeSession.status === 'OFFLINE') {
+          state.activeSession = {
+            startTime: now,
+            status: 'RUNNING',
+            pauseStartTime: null,
+            totalPausedMs: 0,
+            currentActivity: 'off_phone_work',
+            lastActivitySwitchTime: now,
+            activityTimeMap: { off_phone_work: 0 }
+          };
+        } else if (state.activeSession.status === 'PAUSED') {
+          const pauseDur = now - (state.activeSession.pauseStartTime || now);
+          state.activeSession.totalPausedMs = (state.activeSession.totalPausedMs || 0) + pauseDur;
+          state.activeSession.pauseStartTime = null;
+          state.activeSession.lastActivitySwitchTime = now;
+          state.activeSession.status = 'RUNNING';
+        }
+        saveState();
+        updateUI();
+      });
+
+      document.getElementById('mini-btn-pause')?.addEventListener('click', () => {
+        if (state.activeSession && state.activeSession.status === 'RUNNING') {
+          const now = Date.now();
+          const lastSwitch = state.activeSession.lastActivitySwitchTime || state.activeSession.startTime;
+          const curAct = state.activeSession.currentActivity || 'off_phone_work';
+          const elapsed = Math.max(0, Math.floor((now - lastSwitch) / 1000));
+          if (!state.activeSession.activityTimeMap) state.activeSession.activityTimeMap = {};
+          state.activeSession.activityTimeMap[curAct] = (state.activeSession.activityTimeMap[curAct] || 0) + elapsed;
+          state.activeSession.lastActivitySwitchTime = now;
+          state.activeSession.status = 'PAUSED';
+          state.activeSession.pauseStartTime = now;
+          saveState();
+          updateUI();
+        }
+      });
+
+      document.getElementById('mini-btn-stop')?.addEventListener('click', () => {
+        if (state.activeSession) {
+          const now = Date.now();
+          const netSecs = getActiveSeconds();
+          if (netSecs >= 5) {
+            const todayKey = formatDateKey(getTorontoNow());
+            const curAct = state.activeSession.currentActivity || 'off_phone_work';
+            const lastSwitch = state.activeSession.lastActivitySwitchTime || state.activeSession.startTime;
+            let unrecorded = 0;
+            if (state.activeSession.status === 'RUNNING') {
+              unrecorded = Math.max(0, Math.floor((now - lastSwitch) / 1000));
+            } else if (state.activeSession.status === 'PAUSED') {
+              const pausedAt = state.activeSession.pauseStartTime || now;
+              unrecorded = Math.max(0, Math.floor((pausedAt - lastSwitch) / 1000));
+            }
+            const map = { ...(state.activeSession.activityTimeMap || {}) };
+            map[curAct] = (map[curAct] || 0) + unrecorded;
+
+            let phoneSec = (map['inbound_call'] || 0) + (map['outbound_call'] || 0);
+            let offPhoneSec = (map['text_sms'] || 0) + (map['email_in'] || 0) + (map['off_phone_work'] || 0);
+            if ((phoneSec + offPhoneSec) < netSecs) offPhoneSec += (netSecs - (phoneSec + offPhoneSec));
+
+            state.shifts.unshift({
+              id: 'shift_' + now,
+              date: todayKey,
+              startTime: state.activeSession.startTime,
+              endTime: now,
+              durationSeconds: netSecs,
+              phoneSeconds: phoneSec,
+              offPhoneSeconds: offPhoneSec,
+              appointmentsBooked: state.todayAppts,
+              activityBreakdown: map,
+              updatedAt: now,
+              notes: 'Mini Toolbar Shift'
+            });
+          }
+          state.activeSession = null;
+          saveState();
+          updateUI();
+        }
+      });
+
+      document.querySelectorAll('.mini-act-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const act = btn.dataset.act;
+          if (state.activeSession && state.activeSession.status === 'RUNNING') {
+            const now = Date.now();
+            const lastSwitch = state.activeSession.lastActivitySwitchTime || state.activeSession.startTime;
+            const curAct = state.activeSession.currentActivity || 'off_phone_work';
+            const elapsed = Math.max(0, Math.floor((now - lastSwitch) / 1000));
+            if (!state.activeSession.activityTimeMap) state.activeSession.activityTimeMap = {};
+            state.activeSession.activityTimeMap[curAct] = (state.activeSession.activityTimeMap[curAct] || 0) + elapsed;
+            state.activeSession.currentActivity = act;
+            state.activeSession.lastActivitySwitchTime = now;
+            saveState();
+          } else if (state.activeSession) {
+            state.activeSession.currentActivity = act;
+            saveState();
+          }
+          updateUI();
+        });
+      });
+
+      document.getElementById('mini-btn-appt')?.addEventListener('click', () => {
+        state.todayAppts++;
+        saveState();
+        updateUI();
+      });
+
+      document.getElementById('mini-btn-theme')?.addEventListener('click', () => {
+        const themes = ['dark', 'light', 'highvis'];
+        const idx = themes.indexOf(state.theme);
+        const next = themes[(idx + 1) % themes.length];
+        state.theme = next;
+        document.body.setAttribute('data-theme', next);
+        saveState();
+      });
+
+      window.addEventListener('storage', () => {
+        loadState();
+        updateUI();
+      });
+
+      if (syncChannel) {
+        syncChannel.onmessage = () => {
+          loadState();
+          updateUI();
+        };
+      }
+
+      loadState();
+      updateClock();
+      updateUI();
+      setInterval(() => {
+        updateClock();
+        if (state.activeSession && state.activeSession.status === 'RUNNING') {
+          updateUI();
+        }
+      }, 1000);
+    })();
+  </script>
+</body>
+</html>

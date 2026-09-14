@@ -25,8 +25,8 @@ $script:historyDir = Join-Path $script:dataDir "history"
 if (!(Test-Path $script:historyDir)) { New-Item -ItemType Directory -Path $script:historyDir -Force | Out-Null }
 
 $script:versionFile = Join-Path $PSScriptRoot "version.json"
-$script:appVersion = "1.5.4"
-$script:appBuild = "2026.09.12-rev5"
+$script:appVersion = "1.5.5"
+$script:appBuild = "2026.09.14-rev1"
 if (Test-Path $script:versionFile) {
     try {
         $vData = Get-Content $script:versionFile -Raw | ConvertFrom-Json
@@ -806,6 +806,7 @@ function Add-CallbackItem($name, $phone, $email, $date, $time, $notes) {
         status = "PENDING"
         alerted = $false
         createdAt = $nowMs
+        updatedAt = $nowMs
         completedAt = $null
     }
 
@@ -815,11 +816,13 @@ function Add-CallbackItem($name, $phone, $email, $date, $time, $notes) {
 }
 
 function Complete-Callback($cbId) {
+    $nowMs = Get-NowEpochMs
     $all = Get-CallbacksList
     foreach ($c in $all) {
         if ($c.id -eq $cbId) {
             $c.status = "COMPLETED"
-            $c.completedAt = Get-NowEpochMs
+            $c.completedAt = $nowMs
+            $c.updatedAt = $nowMs
             $c.alerted = $true
             break
         }
@@ -828,10 +831,12 @@ function Complete-Callback($cbId) {
 }
 
 function Mark-CallbackAlerted($cbId) {
+    $nowMs = Get-NowEpochMs
     $all = Get-CallbacksList
     foreach ($c in $all) {
         if ($c.id -eq $cbId) {
             $c.alerted = $true
+            $c.updatedAt = $nowMs
             break
         }
     }
@@ -849,6 +854,7 @@ function Snooze-Callback($cbId, $minutes) {
             $c.callbackTime = $newTimeStr
             $c.alerted = $false
             $c.status = "PENDING"
+            $c.updatedAt = $nowMs
             break
         }
     }
@@ -870,7 +876,7 @@ $script:activeToastWindow = $null
 
 function Show-CallbackToast($cb) {
     if ($script:activeToastWindow -and $script:activeToastWindow.IsLoaded) {
-        return
+        return $false
     }
     try {
         [System.Media.SystemSounds]::Exclamation.Play()
@@ -967,6 +973,7 @@ function Show-CallbackToast($cb) {
 
     $currPhone = [string]$cb.phone
     $currId = [string]$cb.id
+    $actionTaken = $false
 
     if ($border) {
         $border.Add_MouseLeftButtonDown({
@@ -974,32 +981,43 @@ function Show-CallbackToast($cb) {
         })
     }
 
-    $toastWin.Add_KeyDown({
-        if ($_.Key -eq [System.Windows.Input.Key]::Escape) {
-            $toastWin.Close()
-        }
-    })
-
-    if ($btnClose) {
-        $btnClose.Add_Click({
-            $toastWin.Close()
-        })
-    }
-
     $toastWin.FindName("BtnToastCopy").Add_Click({
-        [System.Windows.Clipboard]::SetText($currPhone)
+        $actionTaken = $true
+        Set-ClipboardSafe $currPhone
         $toastWin.Close()
         Show-CallbackManager
     }.GetNewClosure())
 
     $toastWin.FindName("BtnToastSnooze").Add_Click({
+        $actionTaken = $true
         Snooze-Callback $currId 15
         $toastWin.Close()
     }.GetNewClosure())
 
     $toastWin.FindName("BtnToastDone").Add_Click({
+        $actionTaken = $true
         Complete-Callback $currId
         $toastWin.Close()
+    }.GetNewClosure())
+
+    if ($btnClose) {
+        $btnClose.Add_Click({
+            if (!$actionTaken) {
+                $actionTaken = $true
+                Snooze-Callback $currId 5
+            }
+            $toastWin.Close()
+        }.GetNewClosure())
+    }
+
+    $toastWin.Add_KeyDown({
+        if ($_.Key -eq [System.Windows.Input.Key]::Escape) {
+            if (!$actionTaken) {
+                $actionTaken = $true
+                Snooze-Callback $currId 5
+            }
+            $toastWin.Close()
+        }
     }.GetNewClosure())
 
     $script:activeToastWindow = $toastWin
@@ -1007,6 +1025,7 @@ function Show-CallbackToast($cb) {
         $script:activeToastWindow = $null
     })
     $toastWin.Show()
+    return $true
 }
 
 function Adjust-TimeString([string]$currentTimeStr, [int]$deltaMinutes) {
@@ -2554,12 +2573,14 @@ $timer.Add_Tick({
             $BtnActCallbacks.BorderBrush = $bc.ConvertFromString("#FBBF24")
         }
 
-        # Check for un-alerted due callbacks to trigger popup (alerts only once per callback)
+        # Check for un-alerted due callbacks to trigger popup (queues safely and only alerts once displayed)
         foreach ($cb in $dueCbs) {
             if (!$cb.alerted) {
-                Mark-CallbackAlerted $cb.id
-                Show-CallbackToast $cb
-                break
+                $opened = Show-CallbackToast $cb
+                if ($opened) {
+                    Mark-CallbackAlerted $cb.id
+                    break
+                }
             }
         }
     } else {
