@@ -15,6 +15,7 @@
     CALLS: 'tracker_calls_v1',
     SALES_REPS: 'tracker_sales_reps_v1',
     SNAPSHOTS: 'tracker_snapshots_v1',
+    DELETED_IDS: 'tracker_deleted_ids_v1',
     THEME: 'tracker_theme_v1'
   };
 
@@ -39,7 +40,7 @@
   // --- Application State ---
   let state = {
     version: '1.5.5',
-    build: '2026.09.14-rev1',
+    build: '2026.09.14-rev2',
     releaseDate: '2026-09-14',
     settings: {
       contractorName: 'Contractor',
@@ -54,6 +55,7 @@
     cbFilter: 'all',
     calls: [],
     salesReps: [],
+    deletedIds: {}, // { [id]: epochMs }
     snapshots: [],
     undoStack: [],
     theme: 'dark'
@@ -61,6 +63,8 @@
 
   let timerInterval = null;
   let snapshotInterval = null;
+  let diskDirectoryHandle = null;
+  let diskSyncDebounce = null;
 
   // --- Utility Functions ---
 
@@ -116,7 +120,29 @@
     return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   }
 
-  // Save State to LocalStorage
+  // Record tombstone deletion
+  function recordDeletedId(id) {
+    if (!id) return;
+    const now = Date.now();
+    if (!state.deletedIds || typeof state.deletedIds !== 'object') state.deletedIds = {};
+    state.deletedIds[id.toString()] = now;
+    try {
+      localStorage.setItem(STORAGE_KEYS.DELETED_IDS, JSON.stringify(state.deletedIds));
+    } catch (e) {}
+    persistState();
+  }
+
+  // Check if an item has been deleted via tombstone
+  function isItemDeleted(item) {
+    if (!item || !item.id || !state.deletedIds) return false;
+    const delTime = state.deletedIds[item.id.toString()];
+    if (!delTime) return false;
+    const itemUpdated = item.updatedAt || item.endTime || item.completedAt || item.createdAt || 0;
+    const itemEpoch = typeof itemUpdated === 'number' ? itemUpdated : (new Date(itemUpdated).getTime() || 0);
+    return delTime >= itemEpoch;
+  }
+
+  // Save State to LocalStorage & trigger disk sync
   function persistState() {
     try {
       localStorage.setItem(STORAGE_KEYS.SHIFTS, JSON.stringify(state.shifts));
@@ -130,16 +156,18 @@
       localStorage.setItem(STORAGE_KEYS.CALLBACKS, JSON.stringify(state.callbacks));
       localStorage.setItem(STORAGE_KEYS.CALLS, JSON.stringify(state.calls));
       localStorage.setItem(STORAGE_KEYS.SALES_REPS, JSON.stringify(state.salesReps));
+      localStorage.setItem(STORAGE_KEYS.DELETED_IDS, JSON.stringify(state.deletedIds || {}));
       localStorage.setItem(STORAGE_KEYS.SNAPSHOTS, JSON.stringify(state.snapshots.slice(0, 24)));
       if (syncChannel) {
         syncChannel.postMessage({ type: 'SYNC_STATE', timestamp: Date.now() });
       }
+      triggerDiskAutoSync();
     } catch (e) {
       console.error('Error saving state to localStorage', e);
     }
   }
 
-  // Load State from LocalStorage
+  // Load State from LocalStorage and Reconcile with Toolbar Data
   function loadPersistedState() {
     try {
       const savedSettings = localStorage.getItem(STORAGE_KEYS.SETTINGS);
@@ -178,6 +206,12 @@
         state.salesReps = [...DEFAULT_SALES_REPS];
       }
 
+      const savedDeletedIds = localStorage.getItem(STORAGE_KEYS.DELETED_IDS);
+      if (savedDeletedIds) {
+        try { state.deletedIds = JSON.parse(savedDeletedIds); } catch(e) {}
+      }
+      if (!state.deletedIds || typeof state.deletedIds !== 'object') state.deletedIds = {};
+
       const savedSnaps = localStorage.getItem(STORAGE_KEYS.SNAPSHOTS);
       if (savedSnaps) {
         try { state.snapshots = JSON.parse(savedSnaps); } catch(e) {}
@@ -189,15 +223,23 @@
         if (window.SABRINA_LOCAL_DATA.version) state.version = window.SABRINA_LOCAL_DATA.version;
         if (window.SABRINA_LOCAL_DATA.build) state.build = window.SABRINA_LOCAL_DATA.build;
 
+        // Merge toolbar deletedIds
+        if (window.SABRINA_LOCAL_DATA.deletedIds && typeof window.SABRINA_LOCAL_DATA.deletedIds === 'object') {
+          const fDel = window.SABRINA_LOCAL_DATA.deletedIds;
+          Object.keys(fDel).forEach(k => {
+            state.deletedIds[k] = Math.max(state.deletedIds[k] || 0, fDel[k] || 0);
+          });
+        }
+
         // 1. Reconcile Shifts
         let fileShifts = window.SABRINA_LOCAL_DATA.shifts;
         if (fileShifts) {
           if (!Array.isArray(fileShifts)) fileShifts = [fileShifts];
-          const localShiftMap = new Map((state.shifts || []).map(s => [s.id, s]));
+          const localShiftMap = new Map((state.shifts || []).filter(s => !isItemDeleted(s)).map(s => [s.id, s]));
           const mergedShifts = [];
 
           fileShifts.forEach(fs => {
-            if (!fs || !fs.id) return;
+            if (!fs || !fs.id || isItemDeleted(fs)) return;
             const local = localShiftMap.get(fs.id);
             if (!local) {
               mergedShifts.push(fs);
@@ -213,7 +255,9 @@
             }
           });
 
-          localShiftMap.forEach(loc => mergedShifts.push(loc));
+          localShiftMap.forEach(loc => {
+            if (!isItemDeleted(loc)) mergedShifts.push(loc);
+          });
           state.shifts = mergedShifts;
         }
 
@@ -222,14 +266,14 @@
           state.todayAppts = Math.max(state.todayAppts || 0, window.SABRINA_LOCAL_DATA.activeSession.TodayAppts);
         }
 
-        // 3. Reconcile Callbacks (Bidirectional status & field updates)
+        // 3. Reconcile Callbacks (Bidirectional status, notes, times & deletes)
         if (window.SABRINA_LOCAL_DATA.callbacks && Array.isArray(window.SABRINA_LOCAL_DATA.callbacks)) {
           const fileCbs = window.SABRINA_LOCAL_DATA.callbacks;
-          const localCbMap = new Map((state.callbacks || []).map(c => [c.id, c]));
+          const localCbMap = new Map((state.callbacks || []).filter(c => !isItemDeleted(c)).map(c => [c.id, c]));
           const mergedCbs = [];
 
           fileCbs.forEach(fc => {
-            if (!fc || !fc.id) return;
+            if (!fc || !fc.id || isItemDeleted(fc)) return;
             const local = localCbMap.get(fc.id);
             if (!local) {
               mergedCbs.push(fc);
@@ -245,18 +289,20 @@
             }
           });
 
-          localCbMap.forEach(loc => mergedCbs.push(loc));
+          localCbMap.forEach(loc => {
+            if (!isItemDeleted(loc)) mergedCbs.push(loc);
+          });
           state.callbacks = mergedCbs;
         }
 
         // 4. Reconcile Call Logs
         if (window.SABRINA_LOCAL_DATA.calls && Array.isArray(window.SABRINA_LOCAL_DATA.calls)) {
           const fileCalls = window.SABRINA_LOCAL_DATA.calls;
-          const localCallMap = new Map((state.calls || []).map(c => [c.id, c]));
+          const localCallMap = new Map((state.calls || []).filter(c => !isItemDeleted(c)).map(c => [c.id, c]));
           const mergedCalls = [];
 
           fileCalls.forEach(fcall => {
-            if (!fcall || !fcall.id) return;
+            if (!fcall || !fcall.id || isItemDeleted(fcall)) return;
             const local = localCallMap.get(fcall.id);
             if (!local) {
               mergedCalls.push(fcall);
@@ -272,7 +318,9 @@
             }
           });
 
-          localCallMap.forEach(loc => mergedCalls.push(loc));
+          localCallMap.forEach(loc => {
+            if (!isItemDeleted(loc)) mergedCalls.push(loc);
+          });
           state.calls = mergedCalls;
         }
 
@@ -294,6 +342,12 @@
           });
         }
       }
+
+      // Final tombstone pruning
+      state.shifts = (state.shifts || []).filter(s => !isItemDeleted(s));
+      state.callbacks = (state.callbacks || []).filter(c => !isItemDeleted(c));
+      state.calls = (state.calls || []).filter(c => !isItemDeleted(c));
+
       state.snapshots.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
 
       const savedTheme = localStorage.getItem(STORAGE_KEYS.THEME);
@@ -308,6 +362,76 @@
 
     } catch (e) {
       console.warn('Error loading localStorage, using defaults', e);
+    }
+  }
+
+  // --- Direct File System Access API Bridge ---
+
+  async function connectDiskDirectory() {
+    if (!window.showDirectoryPicker) {
+      showToast('File System Access API is not supported in this browser. Use Export / Import below.', 'warn');
+      return false;
+    }
+    try {
+      diskDirectoryHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
+      await writeStateToDiskDirectory();
+      updateDiskSyncUI('Connected & Synced', '#22c55e');
+      showToast('📁 Local data folder connected! Live disk sync is active.', 'success');
+      return true;
+    } catch (err) {
+      if (err.name !== 'AbortError') {
+        console.error('Error connecting disk directory:', err);
+        updateDiskSyncUI('Sync Error', '#ef4444');
+        showToast('Could not access folder: ' + err.message, 'error');
+      }
+      return false;
+    }
+  }
+
+  async function writeStateToDiskDirectory() {
+    if (!diskDirectoryHandle) return;
+    try {
+      updateDiskSyncUI('Writing to Disk...', '#f59e0b');
+
+      // Helper to write JSON file to directory
+      const writeFile = async (fileName, dataObj, isJs = false) => {
+        const fileHandle = await diskDirectoryHandle.getFileHandle(fileName, { create: true });
+        const writable = await fileHandle.createWritable();
+        const content = isJs ? dataObj : JSON.stringify(dataObj, null, 2);
+        await writable.write(content);
+        await writable.close();
+      };
+
+      await writeFile('shifts.json', state.shifts || []);
+      await writeFile('callbacks.json', state.callbacks || []);
+      await writeFile('calls.json', state.calls || []);
+      await writeFile('sales_reps.json', state.salesReps || DEFAULT_SALES_REPS);
+      await writeFile('deleted_ids.json', state.deletedIds || {});
+
+      const jsContent = `window.SABRINA_LOCAL_DATA = { version: "${state.version}", build: "${state.build}", shifts: ${JSON.stringify(state.shifts || [])}, activeSession: ${JSON.stringify(state.activeSession)}, callbacks: ${JSON.stringify(state.callbacks || [])}, calls: ${JSON.stringify(state.calls || [])}, salesReps: ${JSON.stringify(state.salesReps || DEFAULT_SALES_REPS)}, deletedIds: ${JSON.stringify(state.deletedIds || {})}, history: ${JSON.stringify(state.snapshots.slice(0, 12))}, theme: "${state.theme || 'dark'}" };`;
+      await writeFile('shifts_data.js', jsContent, true);
+
+      updateDiskSyncUI('Connected & Synced', '#22c55e');
+    } catch (e) {
+      console.warn('Disk auto-sync write error:', e);
+      updateDiskSyncUI('Sync Warning', '#f59e0b');
+    }
+  }
+
+  function triggerDiskAutoSync() {
+    if (!diskDirectoryHandle) return;
+    if (diskSyncDebounce) clearTimeout(diskSyncDebounce);
+    diskSyncDebounce = setTimeout(() => {
+      writeStateToDiskDirectory();
+    }, 1000);
+  }
+
+  function updateDiskSyncUI(text, color) {
+    const badge = document.getElementById('disk-sync-badge');
+    if (badge) {
+      badge.textContent = text || (diskDirectoryHandle ? 'Connected & Synced' : 'Not Connected');
+      badge.style.background = color ? `${color}22` : (diskDirectoryHandle ? 'rgba(34, 197, 94, 0.2)' : 'rgba(148, 163, 184, 0.2)');
+      badge.style.color = color || (diskDirectoryHandle ? '#22c55e' : 'var(--text-muted)');
     }
   }
 
@@ -1961,10 +2085,11 @@
       const repVal = quickApptRep?.value || (state.salesReps && state.salesReps[0]) || 'Representative 1';
       const isCb = quickApptCbCheck ? quickApptCbCheck.checked : false;
 
+      const nowMs = Date.now();
       const newCall = {
-        id: 'call_' + Date.now(),
+        id: 'call_' + nowMs,
         date: formatDateKey(getTorontoNow()),
-        time: format12HourTime(Date.now()),
+        time: format12HourTime(nowMs),
         contactName: name || 'Customer',
         phone: phone || '',
         type: 'Appointment Booked',
@@ -1972,16 +2097,18 @@
         apptTime: apptTimeVal,
         salesRep: repVal,
         outcome: `Appt scheduled for ${repVal} on ${apptDateVal} at ${apptTimeVal}`,
-        hasCallback: isCb
+        hasCallback: isCb,
+        createdAt: nowMs,
+        updatedAt: nowMs
       };
       state.calls.unshift(newCall);
 
       if (isCb) {
         const cbDate = document.getElementById('quick-appt-cb-date')?.value || formatDateKey(getTorontoNow());
-        const cbTimeStr = (document.getElementById('quick-appt-cb-time')?.value || format12HourTime(Date.now() + 3600 * 1000)).trim();
+        const cbTimeStr = (document.getElementById('quick-appt-cb-time')?.value || format12HourTime(nowMs + 3600 * 1000)).trim();
         const dueEpoch = parseDateTimeToEpoch(cbDate, cbTimeStr);
         state.callbacks.unshift({
-          id: 'cb_' + Date.now(),
+          id: 'cb_' + (nowMs + 1),
           contactName: name || 'Customer',
           phone: phone || '',
           email: '',
@@ -1990,7 +2117,8 @@
           dueEpoch: dueEpoch,
           notes: `Follow-up for appt with ${repVal} (${apptDateVal} at ${apptTimeVal})`,
           status: 'PENDING',
-          createdAt: new Date().toISOString()
+          createdAt: nowMs,
+          updatedAt: nowMs
         });
       }
 
@@ -2013,12 +2141,13 @@
         return;
       }
 
+      const nowMs = Date.now();
       if (!dateVal) dateVal = formatDateKey(getTorontoNow());
-      if (!timeVal) timeVal = format12HourTime(Date.now() + 15 * 60 * 1000);
+      if (!timeVal) timeVal = format12HourTime(nowMs + 15 * 60 * 1000);
 
       const dueEpoch = parseDateTimeToEpoch(dateVal, timeVal);
       state.callbacks.unshift({
-        id: 'cb_' + Date.now(),
+        id: 'cb_' + nowMs,
         contactName: name || 'Contact',
         phone: phone,
         email: '',
@@ -2027,7 +2156,8 @@
         dueEpoch: dueEpoch,
         notes: notes,
         status: 'PENDING',
-        createdAt: new Date().toISOString()
+        createdAt: nowMs,
+        updatedAt: nowMs
       });
 
       // Clear inline inputs
@@ -2057,17 +2187,20 @@
         return;
       }
 
-      if (!timeVal) timeVal = format12HourTime(Date.now());
+      const nowMs = Date.now();
+      if (!timeVal) timeVal = format12HourTime(nowMs);
 
       state.calls.unshift({
-        id: 'call_' + Date.now(),
+        id: 'call_' + nowMs,
         date: reportDate,
         time: timeVal,
         contactName: name || 'Customer',
         phone: phone || '',
         type: type,
         outcome: outcome || 'Call logged',
-        hasCallback: false
+        hasCallback: false,
+        createdAt: nowMs,
+        updatedAt: nowMs
       });
 
       if (type === 'Appointment Booked') {
@@ -2203,6 +2336,7 @@ Outbound Call (905) 555-7711  00:05:00  05:30 PM`;
         showToast(`Added ${Math.round(totalSecs / 60)} minutes of Telus phone time to current active session!`, 'success');
       } else if (todayShifts.length > 0) {
         todayShifts[0].phoneSeconds = (todayShifts[0].phoneSeconds || 0) + totalSecs;
+        todayShifts[0].updatedAt = Date.now();
         showToast(`Added ${Math.round(totalSecs / 60)} minutes of Telus phone time to today's shift record!`, 'success');
       } else {
         // Create an entry for today
@@ -2216,7 +2350,9 @@ Outbound Call (905) 555-7711  00:05:00  05:30 PM`;
           phoneSeconds: totalSecs,
           offPhoneSeconds: 0,
           appointmentsBooked: state.todayAppts,
-          notes: `Telus Phone Call Logs (${parsedTelusCalls.length} calls)`
+          notes: `Telus Phone Call Logs (${parsedTelusCalls.length} calls)`,
+          createdAt: now,
+          updatedAt: now
         });
         showToast(`Created a shift entry with ${Math.round(totalSecs / 60)} minutes from Telus call logs!`, 'success');
       }
@@ -2281,6 +2417,20 @@ Outbound Call (905) 555-7711  00:05:00  05:30 PM`;
       showToast('Downloaded sales_reps.json', 'success');
     });
 
+    // Direct Disk Sync Handlers
+    document.getElementById('btn-connect-disk-folder')?.addEventListener('click', connectDiskDirectory);
+    document.getElementById('btn-save-to-disk-now')?.addEventListener('click', async () => {
+      if (!diskDirectoryHandle) {
+        await connectDiskDirectory();
+      } else {
+        await writeStateToDiskDirectory();
+        showToast('💾 Saved all data directly to toolbar files!', 'success');
+      }
+    });
+    document.getElementById('btn-reload-disk-data')?.addEventListener('click', () => {
+      window.location.reload();
+    });
+
     document.getElementById('btn-backup-json')?.addEventListener('click', backupJSON);
 
     document.getElementById('input-restore-json')?.addEventListener('change', (e) => {
@@ -2338,9 +2488,10 @@ Outbound Call (905) 555-7711  00:05:00  05:30 PM`;
 
       const phoneSec = phoneMins * 60;
       const offPhoneSec = Math.max(0, durationSec - phoneSec);
+      const nowMs = Date.now();
 
       state.shifts.unshift({
-        id: 'shift_manual_' + Date.now(),
+        id: 'shift_manual_' + nowMs,
         date: dateVal,
         startTime: startDateObj.getTime(),
         endTime: endDateObj.getTime(),
@@ -2348,7 +2499,9 @@ Outbound Call (905) 555-7711  00:05:00  05:30 PM`;
         phoneSeconds: phoneSec,
         offPhoneSeconds: offPhoneSec,
         appointmentsBooked: appts,
-        notes: notes
+        notes: notes,
+        createdAt: nowMs,
+        updatedAt: nowMs
       });
 
       if (manualModal) manualModal.style.display = 'none';
@@ -2444,16 +2597,17 @@ Outbound Call (905) 555-7711  00:05:00  05:30 PM`;
         return;
       }
 
+      const nowMs = Date.now();
       if (!dateVal) dateVal = formatDateKey(getTorontoNow());
       if (!timeVal) {
-        const defaultTime = new Date(Date.now() + 15 * 60 * 1000);
+        const defaultTime = new Date(nowMs + 15 * 60 * 1000);
         timeVal = format12HourTime(defaultTime.getTime());
       }
 
       const dueEpoch = parseDateTimeToEpoch(dateVal, timeVal);
 
       state.callbacks.unshift({
-        id: 'cb_' + Date.now(),
+        id: 'cb_' + nowMs,
         contactName: name || 'Contact',
         phone: phone,
         email: email,
@@ -2462,7 +2616,8 @@ Outbound Call (905) 555-7711  00:05:00  05:30 PM`;
         dueEpoch: dueEpoch,
         notes: notes,
         status: 'PENDING',
-        createdAt: new Date().toISOString()
+        createdAt: nowMs,
+        updatedAt: nowMs
       });
 
       if (cbModal) cbModal.style.display = 'none';
@@ -2519,15 +2674,18 @@ Outbound Call (905) 555-7711  00:05:00  05:30 PM`;
         return;
       }
 
+      const nowMs = Date.now();
       state.calls.unshift({
-        id: 'call_' + Date.now(),
+        id: 'call_' + nowMs,
         date: reportDate,
-        time: format12HourTime(Date.now()),
+        time: format12HourTime(nowMs),
         contactName: name || 'Customer',
         phone: phone || '',
         type: type,
         outcome: outcome || 'Call logged',
-        hasCallback: false
+        hasCallback: false,
+        createdAt: nowMs,
+        updatedAt: nowMs
       });
 
       if (type === 'Appointment Booked') {
@@ -2546,6 +2704,7 @@ Outbound Call (905) 555-7711  00:05:00  05:30 PM`;
     deleteShift: function(shiftId, el) {
       requestInlineConfirm(el, 'Delete?', () => {
         pushUndoSnapshot('Delete Shift');
+        recordDeletedId(shiftId);
         state.shifts = state.shifts.filter(s => s.id !== shiftId);
         persistState();
         updateUI();
@@ -2554,6 +2713,8 @@ Outbound Call (905) 555-7711  00:05:00  05:30 PM`;
     deleteDateShifts: function(dateKey, el) {
       requestInlineConfirm(el, 'Delete Day?', () => {
         pushUndoSnapshot(`Delete Day (${dateKey})`);
+        const dayShifts = state.shifts.filter(s => s.date === dateKey);
+        dayShifts.forEach(s => recordDeletedId(s.id));
         state.shifts = state.shifts.filter(s => s.date !== dateKey);
         persistState();
         updateUI();
@@ -2588,6 +2749,7 @@ Outbound Call (905) 555-7711  00:05:00  05:30 PM`;
       cb.callbackTime = format12HourTime(newTime.getTime());
       cb.dueEpoch = newTime.getTime();
       cb.status = 'PENDING';
+      cb.updatedAt = Date.now();
       persistState();
       updateUI();
       showToast(`Callback adjusted (${mins > 0 ? '+' : ''}${mins}m) to ${cb.callbackTime}`, 'info');
@@ -2596,7 +2758,8 @@ Outbound Call (905) 555-7711  00:05:00  05:30 PM`;
       const cb = (state.callbacks || []).find(c => c.id === cbId);
       if (!cb) return;
       cb.status = 'COMPLETED';
-      cb.completedAt = new Date().toISOString();
+      cb.completedAt = Date.now();
+      cb.updatedAt = Date.now();
       persistState();
       updateUI();
       showToast(`Callback for ${cb.contactName} marked complete!`, 'success');
@@ -2604,6 +2767,7 @@ Outbound Call (905) 555-7711  00:05:00  05:30 PM`;
     deleteCb: function(cbId, el) {
       requestInlineConfirm(el, 'Delete?', () => {
         pushUndoSnapshot('Delete Callback');
+        recordDeletedId(cbId);
         state.callbacks = (state.callbacks || []).filter(c => c.id !== cbId);
         persistState();
         updateUI();
@@ -2612,11 +2776,14 @@ Outbound Call (905) 555-7711  00:05:00  05:30 PM`;
     deleteCall: function(callId, el) {
       requestInlineConfirm(el, 'Delete?', () => {
         pushUndoSnapshot('Delete Call Log');
+        recordDeletedId(callId);
         state.calls = (state.calls || []).filter(c => c.id !== callId);
         persistState();
         updateUI();
       });
     },
+    connectDiskDirectory: connectDiskDirectory,
+    writeStateToDiskDirectory: writeStateToDiskDirectory,
     undo: undoLastAction,
     takeSnapshot: function(label) {
       take5MinSnapshot(label || 'Manual Snapshot');

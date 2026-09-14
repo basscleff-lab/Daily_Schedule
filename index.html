@@ -688,14 +688,34 @@ Outbound Call (647) 555-9821  00:01:20  01:15 PM"></textarea>
         </div>
       </div>
 
-      <div class="card">
-        <div class="card-title">Data Backup & Safety</div>
-        <p style="font-size: 0.85rem; color: #475569; margin-bottom: 1rem;">
-          All work hours are automatically saved on this computer in local storage. You can also export backups to ensure your data is always safe.
+      <div class="card" id="card-disk-sync">
+        <div class="card-title" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+          <span>📁 Direct Local Disk Sync &amp; Toolbar Bridge</span>
+          <span id="disk-sync-badge" style="font-size: 0.75rem; padding: 3px 8px; border-radius: 9999px; background: rgba(148, 163, 184, 0.2); color: var(--text-muted); font-weight: 600;">Not Connected</span>
+        </div>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
+          Connect your local <code>C:\Apps\Daily_Schedule\data</code> folder directly so any changes made here immediately write to the floating toolbar's JSON data files without needing manual imports.
+        </p>
+
+        <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 1.25rem;">
+          <button class="btn-primary" id="btn-connect-disk-folder" style="font-size: 0.82rem; padding: 0.45rem 0.9rem;">
+            📁 Connect Data Folder (Live Disk Sync)
+          </button>
+          <button class="btn-secondary" id="btn-save-to-disk-now" style="font-size: 0.82rem; padding: 0.45rem 0.9rem;">
+            💾 Save to Data Files Now
+          </button>
+          <button class="btn-secondary" id="btn-reload-disk-data" style="font-size: 0.82rem; padding: 0.45rem 0.9rem;">
+            🔄 Reload from Disk / Toolbar Data
+          </button>
+        </div>
+
+        <div class="card-title" style="font-size: 0.95rem; margin-top: 1rem;">Data Backup &amp; Offline Safety</div>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
+          All work hours, callbacks, and appointments are stored in browser memory and local files. You can export complete snapshots anytime.
         </p>
 
         <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
-          <button class="btn-secondary" id="btn-backup-json">💾 Backup All Data (JSON)</button>
+          <button class="btn-secondary" id="btn-backup-json">💾 Export Full Backup (JSON)</button>
           <label class="btn-secondary" style="cursor: pointer;">
             📂 Restore from Backup
             <input type="file" id="input-restore-json" accept=".json" style="display: none;">

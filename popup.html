@@ -1,10 +1,10 @@
-﻿<!DOCTYPE html>
-<html lang=en>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta charset=UTF-8>
-  <meta name=viewport content=width=device-width, initial-scale=1.0>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Mini Work Tracker</title>
-  <link rel=stylesheet href=styles.css>
+  <link rel="stylesheet" href="styles.css">
   <style>
     body {
       margin: 0;
@@ -13,7 +13,7 @@
       box-sizing: border-box;
       background: var(--transport-bg, #0f172a);
       color: var(--transport-text, #f8fafc);
-      font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica Neue, Arial, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
@@ -31,7 +31,7 @@
       font-size: 0.85rem;
       font-weight: 700;
       color: var(--primary, #38bdf8);
-      font-family: Courier New, Courier, monospace;
+      font-family: "Courier New", Courier, monospace;
     }
     .mini-status-pill {
       display: inline-flex;
@@ -122,7 +122,7 @@
       display: block;
     }
     .mini-readout-val {
-      font-family: Courier New, Courier, monospace;
+      font-family: "Courier New", Courier, monospace;
       font-size: 1.05rem;
       font-weight: 700;
       color: #38bdf8;
@@ -132,7 +132,7 @@
     }
     .mini-activities {
       display: grid;
-      grid-template-columns: repeat(5, 1fr) auto;
+      grid-template-columns: repeat(5, 1fr);
       gap: 4px;
     }
     .mini-act-btn {
@@ -171,54 +171,55 @@
     }
   </style>
 </head>
-<body data-theme=dark>
+<body data-theme="dark">
 
-  <div class=mini-header>
-    <div class=mini-status-pill id=mini-status-pill>
-      <span class=mini-dot></span>
-      <span id=mini-status-text>OFFLINE</span>
+  <div class="mini-header">
+    <div class="mini-status-pill" id="mini-status-pill">
+      <span class="mini-dot"></span>
+      <span id="mini-status-text">OFFLINE</span>
     </div>
-    <div class=mini-clock id=mini-live-clock>12:00:00 PM</div>
-    <div style=display: flex; align-items: center; gap: 4px;>
-      <button class=mini-appt-badge id=mini-btn-appt title=Book Appointment (+1)>
+    <div class="mini-clock" id="mini-live-clock">12:00:00 PM</div>
+    <div style="display: flex; align-items: center; gap: 4px;">
+      <button class="mini-appt-badge" id="mini-btn-appt" title="Book Appointment (+1)">
         <span>APPT:</span>
-        <span id=mini-appt-count>0</span>
-        <span style=color: #22c55e; font-weight: 900;>+</span>
+        <span id="mini-appt-count">0</span>
+        <span style="color: #22c55e; font-weight: 900;">+</span>
       </button>
-      <button id=mini-btn-theme style=background: transparent; border: 1px solid #334155; color: #94a3b8; border-radius: 4px; padding: 2px 5px; cursor: pointer; font-size: 0.7rem; title=Switch Theme>🎨</button>
+      <button id="mini-btn-theme" style="background: transparent; border: 1px solid #334155; color: #94a3b8; border-radius: 4px; padding: 2px 5px; cursor: pointer; font-size: 0.7rem;" title="Switch Theme">🎨</button>
     </div>
   </div>
 
-  <div class=mini-main>
-    <div class=mini-btn-group>
-      <button class=mini-btn mini-btn-rec id=mini-btn-start>● REC</button>
-      <button class=mini-btn mini-btn-pause id=mini-btn-pause disabled>⏸</button>
-      <button class=mini-btn mini-btn-stop id=mini-btn-stop disabled>⏹</button>
+  <div class="mini-main">
+    <div class="mini-btn-group">
+      <button class="mini-btn mini-btn-rec" id="mini-btn-start">● REC</button>
+      <button class="mini-btn mini-btn-pause" id="mini-btn-pause" disabled>⏸</button>
+      <button class="mini-btn mini-btn-stop" id="mini-btn-stop" disabled>⏹</button>
     </div>
-    <div class=mini-readout>
-      <div class=mini-readout-item>
-        <span class=mini-readout-label>Session</span>
-        <span class=mini-readout-val id=mini-session-val>00:00:00</span>
+    <div class="mini-readout">
+      <div class="mini-readout-item">
+        <span class="mini-readout-label">Session</span>
+        <span class="mini-readout-val" id="mini-session-val">00:00:00</span>
       </div>
-      <div style=width: 1px; height: 24px; background: #334155;></div>
-      <div class=mini-readout-item>
-        <span class=mini-readout-label>Today</span>
-        <span class=mini-readout-val today id=mini-today-val>0h 00m</span>
+      <div style="width: 1px; height: 24px; background: #334155;"></div>
+      <div class="mini-readout-item">
+        <span class="mini-readout-label">Today</span>
+        <span class="mini-readout-val today" id="mini-today-val">0h 00m</span>
       </div>
     </div>
   </div>
 
-  <div class=mini-activities>
-    <button class=mini-act-btn data-act=inbound_call title=Inbound Call>📞 Inbound</button>
-    <button class=mini-act-btn data-act=outbound_call title=Outbound Call>📱 Outbound</button>
-    <button class=mini-act-btn data-act=text_sms title=Text SMS>💬 SMS</button>
-    <button class=mini-act-btn data-act=email_in title=Email>✉️ Email</button>
-    <button class=mini-act-btn active data-act=off_phone_work title=Off-Phone / Admin>📋 Admin</button>
+  <div class="mini-activities">
+    <button class="mini-act-btn" data-act="inbound_call" title="Inbound Call">📞 Inbound</button>
+    <button class="mini-act-btn" data-act="outbound_call" title="Outbound Call">📱 Outbound</button>
+    <button class="mini-act-btn" data-act="text_sms" title="Text SMS">💬 SMS</button>
+    <button class="mini-act-btn" data-act="email_in" title="Email">✉️ Email</button>
+    <button class="mini-act-btn active" data-act="off_phone_work" title="Off-Phone / Admin">📋 Admin</button>
   </div>
 
   <script>
     (function() {
-      const STORAGE_KEYS = {
+      'use strict';
+      var STORAGE_KEYS = {
         SHIFTS: 'tracker_shifts_v1',
         ACTIVE_SESSION: 'tracker_active_session_v1',
         SETTINGS: 'tracker_settings_v1',
@@ -226,9 +227,9 @@
         THEME: 'tracker_theme_v1'
       };
 
-      const syncChannel = window.BroadcastChannel ? new BroadcastChannel('tracker_sync_channel') : null;
+      var syncChannel = (typeof window !== 'undefined' && window.BroadcastChannel) ? new window.BroadcastChannel('tracker_sync_channel') : null;
 
-      let state = {
+      var state = {
         shifts: [],
         activeSession: null,
         todayAppts: 0,
@@ -237,38 +238,38 @@
 
       function getTorontoNow() { return new Date(); }
       function formatDateKey(d) {
-        const dateObj = new Date(d);
-        const y = dateObj.toLocaleDateString('en-CA', { timeZone: 'America/Toronto', year: 'numeric' });
-        const m = dateObj.toLocaleDateString('en-CA', { timeZone: 'America/Toronto', month: '2-digit' });
-        const day = dateObj.toLocaleDateString('en-CA', { timeZone: 'America/Toronto', day: '2-digit' });
-        return ${y}--;
+        var dateObj = new Date(d);
+        var y = dateObj.toLocaleDateString('en-CA', { timeZone: 'America/Toronto', year: 'numeric' });
+        var m = dateObj.toLocaleDateString('en-CA', { timeZone: 'America/Toronto', month: '2-digit' });
+        var day = dateObj.toLocaleDateString('en-CA', { timeZone: 'America/Toronto', day: '2-digit' });
+        return y + '-' + m + '-' + day;
       }
 
       function formatStopwatch(secs) {
-        const h = Math.floor(secs / 3600);
-        const m = Math.floor((secs % 3600) / 60);
-        const s = secs % 60;
-        return ${h.toString().padStart(2, '0')}::;
+        var h = Math.floor(secs / 3600);
+        var m = Math.floor((secs % 3600) / 60);
+        var s = secs % 60;
+        return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
       }
 
       function formatHoursMinutes(secs) {
-        const h = Math.floor(secs / 3600);
-        const m = Math.floor((secs % 3600) / 60);
-        return ${h}h m;
+        var h = Math.floor(secs / 3600);
+        var m = Math.floor((secs % 3600) / 60);
+        return h + 'h ' + String(m).padStart(2, '0') + 'm';
       }
 
       function loadState() {
         try {
-          const s = localStorage.getItem(STORAGE_KEYS.SHIFTS);
+          var s = localStorage.getItem(STORAGE_KEYS.SHIFTS);
           if (s) state.shifts = JSON.parse(s);
-          const a = localStorage.getItem(STORAGE_KEYS.ACTIVE_SESSION);
+          var a = localStorage.getItem(STORAGE_KEYS.ACTIVE_SESSION);
           state.activeSession = a ? JSON.parse(a) : null;
-          const ap = localStorage.getItem(STORAGE_KEYS.TODAY_APPTS);
+          var ap = localStorage.getItem(STORAGE_KEYS.TODAY_APPTS);
           if (ap) {
-            const p = JSON.parse(ap);
+            var p = JSON.parse(ap);
             if (p.date === formatDateKey(getTorontoNow())) state.todayAppts = p.count || 0;
           }
-          const t = localStorage.getItem(STORAGE_KEYS.THEME) || 'dark';
+          var t = localStorage.getItem(STORAGE_KEYS.THEME) || 'dark';
           state.theme = t;
           document.body.setAttribute('data-theme', t);
         } catch(e) {}
@@ -289,21 +290,21 @@
 
       function getActiveSeconds() {
         if (!state.activeSession) return 0;
-        const now = Date.now();
-        let gross = 0;
+        var now = Date.now();
+        var gross = 0;
         if (state.activeSession.status === 'RUNNING') {
           gross = (now - state.activeSession.startTime) - (state.activeSession.totalPausedMs || 0);
         } else if (state.activeSession.status === 'PAUSED') {
-          const pausedAt = state.activeSession.pauseStartTime || now;
+          var pausedAt = state.activeSession.pauseStartTime || now;
           gross = (pausedAt - state.activeSession.startTime) - (state.activeSession.totalPausedMs || 0);
         }
         return Math.max(0, Math.floor(gross / 1000));
       }
 
       function getTodaySeconds() {
-        const todayKey = formatDateKey(getTorontoNow());
-        let total = 0;
-        (state.shifts || []).forEach(s => {
+        var todayKey = formatDateKey(getTorontoNow());
+        var total = 0;
+        (state.shifts || []).forEach(function(s) {
           if (s.date === todayKey) total += (s.durationSeconds || 0);
         });
         total += getActiveSeconds();
@@ -311,53 +312,52 @@
       }
 
       function updateUI() {
-        const isRunning = state.activeSession && state.activeSession.status === 'RUNNING';
-        const isPaused = state.activeSession && state.activeSession.status === 'PAUSED';
+        var isRunning = state.activeSession && state.activeSession.status === 'RUNNING';
+        var isPaused = state.activeSession && state.activeSession.status === 'PAUSED';
 
-        const pill = document.getElementById('mini-status-pill');
-        const txt = document.getElementById('mini-status-text');
-        const btnStart = document.getElementById('mini-btn-start');
-        const btnPause = document.getElementById('mini-btn-pause');
-        const btnStop = document.getElementById('mini-btn-stop');
-        const apptCount = document.getElementById('mini-appt-count');
+        var pill = document.getElementById('mini-status-pill');
+        var txt = document.getElementById('mini-status-text');
+        var btnStart = document.getElementById('mini-btn-start');
+        var btnPause = document.getElementById('mini-btn-pause');
+        var btnStop = document.getElementById('mini-btn-stop');
+        var apptCount = document.getElementById('mini-appt-count');
 
         if (apptCount) apptCount.textContent = state.todayAppts;
 
         if (isRunning) {
-          pill.className = 'mini-status-pill running';
-          txt.textContent = 'REC (ON)';
-          btnStart.disabled = true;
-          btnStart.textContent = '● REC';
-          btnPause.disabled = false;
-          btnStop.disabled = false;
+          if (pill) pill.className = 'mini-status-pill running';
+          if (txt) txt.textContent = 'REC (ON)';
+          if (btnStart) { btnStart.disabled = true; btnStart.textContent = '● REC'; }
+          if (btnPause) btnPause.disabled = false;
+          if (btnStop) btnStop.disabled = false;
         } else if (isPaused) {
-          pill.className = 'mini-status-pill paused';
-          txt.textContent = 'PAUSED';
-          btnStart.disabled = false;
-          btnStart.textContent = '▶ RESUME';
-          btnPause.disabled = true;
-          btnStop.disabled = false;
+          if (pill) pill.className = 'mini-status-pill paused';
+          if (txt) txt.textContent = 'PAUSED';
+          if (btnStart) { btnStart.disabled = false; btnStart.textContent = '▶ RESUME'; }
+          if (btnPause) btnPause.disabled = true;
+          if (btnStop) btnStop.disabled = false;
         } else {
-          pill.className = 'mini-status-pill';
-          txt.textContent = 'OFFLINE';
-          btnStart.disabled = false;
-          btnStart.textContent = '● REC';
-          btnPause.disabled = true;
-          btnStop.disabled = true;
+          if (pill) pill.className = 'mini-status-pill';
+          if (txt) txt.textContent = 'OFFLINE';
+          if (btnStart) { btnStart.disabled = false; btnStart.textContent = '● REC'; }
+          if (btnPause) btnPause.disabled = true;
+          if (btnStop) btnStop.disabled = true;
         }
 
-        const curAct = (state.activeSession && state.activeSession.currentActivity) || 'off_phone_work';
-        document.querySelectorAll('.mini-act-btn').forEach(btn => {
+        var curAct = (state.activeSession && state.activeSession.currentActivity) || 'off_phone_work';
+        document.querySelectorAll('.mini-act-btn').forEach(function(btn) {
           btn.classList.toggle('active', btn.dataset.act === curAct);
         });
 
-        document.getElementById('mini-session-val').textContent = formatStopwatch(getActiveSeconds());
-        document.getElementById('mini-today-val').textContent = formatHoursMinutes(getTodaySeconds());
+        var sVal = document.getElementById('mini-session-val');
+        var tVal = document.getElementById('mini-today-val');
+        if (sVal) sVal.textContent = formatStopwatch(getActiveSeconds());
+        if (tVal) tVal.textContent = formatHoursMinutes(getTodaySeconds());
       }
 
       function updateClock() {
-        const now = getTorontoNow();
-        const el = document.getElementById('mini-live-clock');
+        var now = getTorontoNow();
+        var el = document.getElementById('mini-live-clock');
         if (el) {
           el.textContent = now.toLocaleTimeString('en-US', {
             timeZone: 'America/Toronto',
@@ -369,9 +369,8 @@
         }
       }
 
-      // Event handlers
-      document.getElementById('mini-btn-start')?.addEventListener('click', () => {
-        const now = Date.now();
+      document.getElementById('mini-btn-start')?.addEventListener('click', function() {
+        var now = Date.now();
         if (!state.activeSession || state.activeSession.status === 'OFFLINE') {
           state.activeSession = {
             startTime: now,
@@ -383,7 +382,7 @@
             activityTimeMap: { off_phone_work: 0 }
           };
         } else if (state.activeSession.status === 'PAUSED') {
-          const pauseDur = now - (state.activeSession.pauseStartTime || now);
+          var pauseDur = now - (state.activeSession.pauseStartTime || now);
           state.activeSession.totalPausedMs = (state.activeSession.totalPausedMs || 0) + pauseDur;
           state.activeSession.pauseStartTime = null;
           state.activeSession.lastActivitySwitchTime = now;
@@ -393,12 +392,12 @@
         updateUI();
       });
 
-      document.getElementById('mini-btn-pause')?.addEventListener('click', () => {
+      document.getElementById('mini-btn-pause')?.addEventListener('click', function() {
         if (state.activeSession && state.activeSession.status === 'RUNNING') {
-          const now = Date.now();
-          const lastSwitch = state.activeSession.lastActivitySwitchTime || state.activeSession.startTime;
-          const curAct = state.activeSession.currentActivity || 'off_phone_work';
-          const elapsed = Math.max(0, Math.floor((now - lastSwitch) / 1000));
+          var now = Date.now();
+          var lastSwitch = state.activeSession.lastActivitySwitchTime || state.activeSession.startTime;
+          var curAct = state.activeSession.currentActivity || 'off_phone_work';
+          var elapsed = Math.max(0, Math.floor((now - lastSwitch) / 1000));
           if (!state.activeSession.activityTimeMap) state.activeSession.activityTimeMap = {};
           state.activeSession.activityTimeMap[curAct] = (state.activeSession.activityTimeMap[curAct] || 0) + elapsed;
           state.activeSession.lastActivitySwitchTime = now;
@@ -409,26 +408,26 @@
         }
       });
 
-      document.getElementById('mini-btn-stop')?.addEventListener('click', () => {
+      document.getElementById('mini-btn-stop')?.addEventListener('click', function() {
         if (state.activeSession) {
-          const now = Date.now();
-          const netSecs = getActiveSeconds();
+          var now = Date.now();
+          var netSecs = getActiveSeconds();
           if (netSecs >= 5) {
-            const todayKey = formatDateKey(getTorontoNow());
-            const curAct = state.activeSession.currentActivity || 'off_phone_work';
-            const lastSwitch = state.activeSession.lastActivitySwitchTime || state.activeSession.startTime;
-            let unrecorded = 0;
+            var todayKey = formatDateKey(getTorontoNow());
+            var curAct = state.activeSession.currentActivity || 'off_phone_work';
+            var lastSwitch = state.activeSession.lastActivitySwitchTime || state.activeSession.startTime;
+            var unrecorded = 0;
             if (state.activeSession.status === 'RUNNING') {
               unrecorded = Math.max(0, Math.floor((now - lastSwitch) / 1000));
             } else if (state.activeSession.status === 'PAUSED') {
-              const pausedAt = state.activeSession.pauseStartTime || now;
+              var pausedAt = state.activeSession.pauseStartTime || now;
               unrecorded = Math.max(0, Math.floor((pausedAt - lastSwitch) / 1000));
             }
-            const map = { ...(state.activeSession.activityTimeMap || {}) };
+            var map = Object.assign({}, state.activeSession.activityTimeMap || {});
             map[curAct] = (map[curAct] || 0) + unrecorded;
 
-            let phoneSec = (map['inbound_call'] || 0) + (map['outbound_call'] || 0);
-            let offPhoneSec = (map['text_sms'] || 0) + (map['email_in'] || 0) + (map['off_phone_work'] || 0);
+            var phoneSec = (map['inbound_call'] || 0) + (map['outbound_call'] || 0);
+            var offPhoneSec = (map['text_sms'] || 0) + (map['email_in'] || 0) + (map['off_phone_work'] || 0);
             if ((phoneSec + offPhoneSec) < netSecs) offPhoneSec += (netSecs - (phoneSec + offPhoneSec));
 
             state.shifts.unshift({
@@ -451,14 +450,14 @@
         }
       });
 
-      document.querySelectorAll('.mini-act-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const act = btn.dataset.act;
+      document.querySelectorAll('.mini-act-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          var act = btn.dataset.act;
           if (state.activeSession && state.activeSession.status === 'RUNNING') {
-            const now = Date.now();
-            const lastSwitch = state.activeSession.lastActivitySwitchTime || state.activeSession.startTime;
-            const curAct = state.activeSession.currentActivity || 'off_phone_work';
-            const elapsed = Math.max(0, Math.floor((now - lastSwitch) / 1000));
+            var now = Date.now();
+            var lastSwitch = state.activeSession.lastActivitySwitchTime || state.activeSession.startTime;
+            var curAct = state.activeSession.currentActivity || 'off_phone_work';
+            var elapsed = Math.max(0, Math.floor((now - lastSwitch) / 1000));
             if (!state.activeSession.activityTimeMap) state.activeSession.activityTimeMap = {};
             state.activeSession.activityTimeMap[curAct] = (state.activeSession.activityTimeMap[curAct] || 0) + elapsed;
             state.activeSession.currentActivity = act;
@@ -472,28 +471,28 @@
         });
       });
 
-      document.getElementById('mini-btn-appt')?.addEventListener('click', () => {
+      document.getElementById('mini-btn-appt')?.addEventListener('click', function() {
         state.todayAppts++;
         saveState();
         updateUI();
       });
 
-      document.getElementById('mini-btn-theme')?.addEventListener('click', () => {
-        const themes = ['dark', 'light', 'highvis'];
-        const idx = themes.indexOf(state.theme);
-        const next = themes[(idx + 1) % themes.length];
+      document.getElementById('mini-btn-theme')?.addEventListener('click', function() {
+        var themes = ['dark', 'light', 'highvis'];
+        var idx = themes.indexOf(state.theme);
+        var next = themes[(idx + 1) % themes.length];
         state.theme = next;
         document.body.setAttribute('data-theme', next);
         saveState();
       });
 
-      window.addEventListener('storage', () => {
+      window.addEventListener('storage', function() {
         loadState();
         updateUI();
       });
 
       if (syncChannel) {
-        syncChannel.onmessage = () => {
+        syncChannel.onmessage = function() {
           loadState();
           updateUI();
         };
@@ -502,7 +501,7 @@
       loadState();
       updateClock();
       updateUI();
-      setInterval(() => {
+      setInterval(function() {
         updateClock();
         if (state.activeSession && state.activeSession.status === 'RUNNING') {
           updateUI();

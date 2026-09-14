@@ -19,6 +19,7 @@ $script:sessionFile = Join-Path $script:dataDir "active_session.json"
 $script:callbacksFile = Join-Path $script:dataDir "callbacks.json"
 $script:callsFile = Join-Path $script:dataDir "calls.json"
 $script:salesRepsFile = Join-Path $script:dataDir "sales_reps.json"
+$script:deletedIdsFile = Join-Path $script:dataDir "deleted_ids.json"
 $script:backupDir = Join-Path $script:dataDir "backups"
 if (!(Test-Path $script:backupDir)) { New-Item -ItemType Directory -Path $script:backupDir -Force | Out-Null }
 $script:historyDir = Join-Path $script:dataDir "history"
@@ -26,7 +27,7 @@ if (!(Test-Path $script:historyDir)) { New-Item -ItemType Directory -Path $scrip
 
 $script:versionFile = Join-Path $PSScriptRoot "version.json"
 $script:appVersion = "1.5.5"
-$script:appBuild = "2026.09.14-rev1"
+$script:appBuild = "2026.09.14-rev2"
 if (Test-Path $script:versionFile) {
     try {
         $vData = Get-Content $script:versionFile -Raw | ConvertFrom-Json
@@ -635,6 +636,13 @@ function Export-LocalDataJs {
         } else {
             $salesRepsJson = @($script:defaultSalesReps) | ConvertTo-Json -Depth 3
         }
+        $deletedIdsJson = "{}"
+        if (Test-Path $script:deletedIdsFile) {
+            $rawDel = Get-Content $script:deletedIdsFile -Raw
+            if ($rawDel -and $rawDel.Trim().Length -gt 0) {
+                $deletedIdsJson = $rawDel.Trim()
+            }
+        }
         $snaps = @()
         if (Test-Path $script:historyDir) {
             $snapFiles = Get-ChildItem -Path $script:historyDir -Filter "snapshot_*.json" | Sort-Object LastWriteTime -Descending | Select-Object -First 12
@@ -655,10 +663,41 @@ function Export-LocalDataJs {
         $snapsJson = if ($snaps.Count -gt 0) { $snaps | ConvertTo-Json -Depth 3 } else { "[]" }
         $sessionJson = $script:state | ConvertTo-Json -Depth 4
         $themeStr = if ($script:state.Theme) { $script:state.Theme } else { "dark" }
-        $jsContent = "window.SABRINA_LOCAL_DATA = { version: `"$($script:appVersion)`", build: `"$($script:appBuild)`", shifts: $shiftsJson, activeSession: $sessionJson, callbacks: $cbsJson, calls: $callsJson, salesReps: $salesRepsJson, history: $snapsJson, theme: `"$themeStr`" };"
+        $jsContent = "window.SABRINA_LOCAL_DATA = { version: `"$($script:appVersion)`", build: `"$($script:appBuild)`", shifts: $shiftsJson, activeSession: $sessionJson, callbacks: $cbsJson, calls: $callsJson, salesReps: $salesRepsJson, deletedIds: $deletedIdsJson, history: $snapsJson, theme: `"$themeStr`" };"
         $jsPath = Join-Path $script:dataDir "shifts_data.js"
         Set-Content -Path $jsPath -Value $jsContent -Force
     } catch {}
+}
+
+function Get-DeletedIdsMap {
+    if (Test-Path $script:deletedIdsFile) {
+        try {
+            $raw = Get-Content $script:deletedIdsFile -Raw
+            if ($raw -and $raw.Trim().Length -gt 0) {
+                $parsed = $raw | ConvertFrom-Json
+                $map = @{}
+                foreach ($prop in $parsed.PSObject.Properties) {
+                    $map[$prop.Name] = [int64]$prop.Value
+                }
+                return $map
+            }
+        } catch {}
+    }
+    return @{}
+}
+
+function Save-DeletedIdsMap($map) {
+    try {
+        $map | ConvertTo-Json | Set-Content -Path $script:deletedIdsFile -Force
+        Export-LocalDataJs
+    } catch {}
+}
+
+function Record-DeletedId($id) {
+    if (-not $id) { return }
+    $map = Get-DeletedIdsMap
+    $map[$id.ToString()] = Get-NowEpochMs
+    Save-DeletedIdsMap $map
 }
 
 function Save-5MinSnapshot {
@@ -869,6 +908,7 @@ function Delete-Callback($cbId) {
             $filtered += $c
         }
     }
+    Record-DeletedId $cbId
     Save-CallbacksList $filtered
 }
 
