@@ -6,7 +6,7 @@
   <title>Optima Windows & Doors — Quick Reference Hub (Sabrina)</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🪟</text></svg>">
   <style>
-    :root {
+    :root, body[data-theme="dark"] {
       --bg: #0f172a;
       --card-bg: #1e293b;
       --card-border: #334155;
@@ -24,6 +24,116 @@
       --tag-spec: #8b5cf6;
       --tag-faq: #10b981;
       --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body[data-theme="light"] {
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --card-border: #cbd5e1;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --accent: #0284c7;
+      --accent-hover: #0369a1;
+      --accent-bg: rgba(2, 132, 199, 0.1);
+      --highlight: #d97706;
+      --highlight-bg: rgba(217, 119, 6, 0.12);
+      --success: #16a34a;
+      --success-bg: rgba(22, 163, 74, 0.12);
+      --tag-window: #2563eb;
+      --tag-door: #db2777;
+      --tag-spec: #7c3aed;
+      --tag-faq: #059669;
+    }
+
+    /* Light Theme Element Overrides */
+    body[data-theme="light"] header {
+      background: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+    }
+    body[data-theme="light"] .brand-title h1 {
+      color: #0f172a;
+    }
+    body[data-theme="light"] .btn-action {
+      background: #f1f5f9;
+      color: #1e293b;
+      border-color: #cbd5e1;
+    }
+    body[data-theme="light"] .btn-action:hover {
+      background: #e2e8f0;
+      color: #0f172a;
+      border-color: #94a3b8;
+    }
+    body[data-theme="light"] .select-dropdown,
+    body[data-theme="light"] .search-input {
+      background: #ffffff;
+      color: #0f172a;
+    }
+    body[data-theme="light"] .pill-btn {
+      background: #ffffff;
+      color: #64748b;
+      border-color: #cbd5e1;
+    }
+    body[data-theme="light"] .pill-btn:hover {
+      background: #f1f5f9;
+      color: #0f172a;
+    }
+    body[data-theme="light"] .pill-btn.active {
+      background: var(--accent);
+      color: #ffffff;
+    }
+    body[data-theme="light"] .brag-pill {
+      background: #ffffff;
+      border-color: #e2e8f0;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    body[data-theme="light"] .ref-card {
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    }
+    body[data-theme="light"] .ref-card:hover {
+      border-color: #94a3b8;
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+    }
+    body[data-theme="light"] .card-header {
+      background: #f8fafc;
+    }
+    body[data-theme="light"] .card-title-group h2 {
+      color: #0f172a;
+    }
+    body[data-theme="light"] .info-value,
+    body[data-theme="light"] .bullet-list li {
+      color: #334155;
+    }
+    body[data-theme="light"] .soundbite-box {
+      background: #f8fafc;
+      border-color: #cbd5e1;
+    }
+    body[data-theme="light"] .soundbite-text {
+      color: #0f172a;
+    }
+    body[data-theme="light"] .btn-copy {
+      border-color: #cbd5e1;
+      color: #64748b;
+    }
+    body[data-theme="light"] .btn-copy:hover {
+      background: #e2e8f0;
+      color: #0f172a;
+    }
+    body[data-theme="light"] .booking-bridge-banner {
+      background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+      border-color: #93c5fd;
+    }
+    body[data-theme="light"] .bridge-content h3 {
+      color: #1e3a8a;
+    }
+    body[data-theme="light"] .bridge-content p {
+      color: #1e40af;
+    }
+    body[data-theme="light"] .sticky-dock {
+      background: rgba(255, 255, 255, 0.95);
+      border-top-color: #cbd5e1;
+    }
+    body[data-theme="light"] .sticky-dock-text {
+      color: #334155;
     }
 
     * {
@@ -559,6 +669,10 @@
         </div>
 
         <div class="header-actions">
+          <button class="btn-action" id="btn-theme-toggle" title="Switch Theme (Dark / Light)">
+            <span id="theme-icon">☀️</span>
+            <span id="theme-text">Light Mode</span>
+          </button>
           <button class="btn-action" onclick="window.print()" title="Print Cheat Sheet for Desk">🖨️ Print Sheet</button>
           <button class="btn-action" id="btn-reset-filters" title="Reset All Filters">🔄 Reset</button>
         </div>
@@ -1412,6 +1526,43 @@
         resetFilters(true);
       }
     });
+
+    // Theme Switcher (Dark / Light)
+    const btnTheme = document.getElementById('btn-theme-toggle');
+    const themeIcon = document.getElementById('theme-icon');
+    const themeText = document.getElementById('theme-text');
+
+    function applyTheme(theme) {
+      document.body.setAttribute('data-theme', theme);
+      try {
+        localStorage.setItem('optima_ref_theme', theme);
+      } catch (e) {}
+
+      if (theme === 'light') {
+        if (themeIcon) themeIcon.textContent = '🌙';
+        if (themeText) themeText.textContent = 'Dark Mode';
+        if (btnTheme) btnTheme.title = 'Switch to Dark Theme';
+      } else {
+        if (themeIcon) themeIcon.textContent = '☀️';
+        if (themeText) themeText.textContent = 'Light Mode';
+        if (btnTheme) btnTheme.title = 'Switch to Light Theme';
+      }
+    }
+
+    // Initialize theme from localStorage, or parent app theme, or default to dark
+    let initialTheme = 'dark';
+    try {
+      initialTheme = localStorage.getItem('optima_ref_theme') || localStorage.getItem('tracker_theme_v1') || 'dark';
+    } catch (e) {}
+    applyTheme(initialTheme);
+
+    if (btnTheme) {
+      btnTheme.addEventListener('click', () => {
+        const currentTheme = document.body.getAttribute('data-theme') || 'dark';
+        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        applyTheme(newTheme);
+      });
+    }
   </script>
 </body>
 </html>
