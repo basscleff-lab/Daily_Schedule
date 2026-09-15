@@ -27,8 +27,8 @@ $script:historyDir = Join-Path $script:dataDir "history"
 if (!(Test-Path $script:historyDir)) { New-Item -ItemType Directory -Path $script:historyDir -Force | Out-Null }
 
 $script:versionFile = Join-Path $PSScriptRoot "version.json"
-$script:appVersion = "1.5.5"
-$script:appBuild = "2026.09.14-rev2"
+$script:appVersion = "1.5.6"
+$script:appBuild = "2026.09.14-rev3"
 if (Test-Path $script:versionFile) {
     try {
         $vData = Get-Content $script:versionFile -Raw | ConvertFrom-Json
