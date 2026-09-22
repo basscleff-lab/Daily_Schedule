@@ -1036,7 +1036,7 @@ function Show-CallbackToast($cb) {
                 <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
                     <TextBlock Name="TxtToastHeader" Text="REMINDER: CALLBACK DUE NOW!" Foreground="#EF4444" FontWeight="Bold" FontSize="12"/>
                 </StackPanel>
-                <Button Name="BtnToastClose" Grid.Column="1" Content="✕" Background="#334155" Foreground="White" FontWeight="Bold" FontSize="11" Width="22" Height="22" BorderThickness="0" Cursor="Hand"/>
+                <Button Name="BtnToastClose" Grid.Column="1" Content="✕" Background="#334155" Foreground="White" FontWeight="Bold" FontSize="11" Width="22" Height="22" BorderThickness="0" Cursor="Hand" IsCancel="True" ToolTip="Close (Esc)"/>
             </Grid>
 
             <StackPanel Grid.Row="1" Margin="0,0,0,8">
@@ -1103,8 +1103,9 @@ function Show-CallbackToast($cb) {
     $currId = [string]$cb.id
     $actionTaken = $false
 
-    if ($border) {
-        $border.Add_MouseLeftButtonDown({
+    $toastHeader = $toastWin.FindName("ToastHeaderGrid")
+    if ($toastHeader) {
+        $toastHeader.Add_MouseLeftButtonDown({
             $toastWin.DragMove()
         })
     }
@@ -1138,8 +1139,9 @@ function Show-CallbackToast($cb) {
         }.GetNewClosure())
     }
 
-    $toastWin.Add_KeyDown({
+    $toastWin.Add_PreviewKeyDown({
         if ($_.Key -eq [System.Windows.Input.Key]::Escape) {
+            $_.Handled = $true
             if (!$actionTaken) {
                 $actionTaken = $true
                 Snooze-Callback $currId 5
@@ -1152,6 +1154,7 @@ function Show-CallbackToast($cb) {
     $toastWin.Add_Closed({
         $script:activeToastWindow = $null
     })
+    try { $toastWin.Owner = $window } catch {}
     $toastWin.Show()
     return $true
 }
@@ -1470,9 +1473,9 @@ function Show-QuickApptModal([switch]$NoShow) {
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
 
-            <Grid Grid.Row="0" Margin="0,0,0,10">
-                <TextBlock Name="TxtApptTitle" Text="BOOK APPOINTMENT" Foreground="#22C55E" FontWeight="Bold" FontSize="13"/>
-                <Button Name="BtnApptClose" Content="X" HorizontalAlignment="Right" Background="#334155" Foreground="White" FontWeight="Bold" FontSize="11" Width="20" Height="20" BorderThickness="0" Cursor="Hand"/>
+            <Grid Grid.Row="0" Margin="0,0,0,10" Name="ApptHeaderGrid" Background="Transparent" Cursor="SizeAll">
+                <TextBlock Name="TxtApptTitle" Text="BOOK APPOINTMENT" Foreground="#22C55E" FontWeight="Bold" FontSize="13" VerticalAlignment="Center"/>
+                <Button Name="BtnApptClose" Content="✕" HorizontalAlignment="Right" Background="#334155" Foreground="White" FontWeight="Bold" FontSize="11" Width="22" Height="22" BorderThickness="0" Cursor="Hand" IsCancel="True" ToolTip="Close (Esc)"/>
             </Grid>
 
             <!-- Customer Name & Phone -->
@@ -1707,20 +1710,22 @@ function Show-QuickApptModal([switch]$NoShow) {
         $apptWin.Close()
     })
 
-    $apptWinBorder = $apptWin.FindName("ApptModalBorder")
-    if ($apptWinBorder) {
-        $apptWinBorder.Add_MouseLeftButtonDown({
+    $apptHeader = $apptWin.FindName("ApptHeaderGrid")
+    if ($apptHeader) {
+        $apptHeader.Add_MouseLeftButtonDown({
             $apptWin.DragMove()
         })
     }
 
-    $apptWin.Add_KeyDown({
+    $apptWin.Add_PreviewKeyDown({
         if ($_.Key -eq [System.Windows.Input.Key]::Escape) {
+            $_.Handled = $true
             $apptWin.Close()
         }
     })
 
     if (!$NoShow) {
+        try { $apptWin.Owner = $window } catch {}
         $apptWin.Show()
     }
     return $apptWin
@@ -2283,7 +2288,7 @@ function Show-CallbackManager {
                 <TextBlock Name="TxtMgrStatus" Grid.Column="1" Text="Ready" Foreground="#38BDF8" FontSize="11" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="0,0,10,0"/>
                 <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
                     <Button Name="BtnMgrCopyAllExcel" Content="Copy All for Excel" Background="#1E3A8A" Foreground="#93C5FD" FontWeight="Bold" FontSize="11" Padding="8,4" BorderThickness="1" BorderBrush="#2563EB" Margin="0,0,8,0" Cursor="Hand"/>
-                    <Button Name="BtnMgrClose" Content="✕" Background="#DC2626" Foreground="White" FontWeight="Bold" FontSize="12" Width="26" Height="26" BorderThickness="0" Cursor="Hand" ToolTip="Close (Esc)"/>
+                    <Button Name="BtnMgrClose" Content="✕" Background="#DC2626" Foreground="White" FontWeight="Bold" FontSize="12" Width="26" Height="26" BorderThickness="0" Cursor="Hand" IsCancel="True" ToolTip="Close (Esc)"/>
                 </StackPanel>
             </Grid>
 
@@ -2392,11 +2397,10 @@ function Show-CallbackManager {
     $mgrWin = $script:cbManagerWindow
     $mgrHeader = $mgrWin.FindName("MgrHeaderBar")
     if ($mgrHeader) { $mgrHeader.Add_MouseLeftButtonDown({ $mgrWin.DragMove() }) }
-    $mgrOuter = $mgrWin.FindName("MgrOuterBorder")
-    if ($mgrOuter) { $mgrOuter.Add_MouseLeftButtonDown({ $mgrWin.DragMove() }) }
 
-    $mgrWin.Add_KeyDown({
+    $mgrWin.Add_PreviewKeyDown({
         if ($_.Key -eq [System.Windows.Input.Key]::Escape) {
+            $_.Handled = $true
             $mgrWin.Close()
         }
     })
@@ -2489,6 +2493,7 @@ function Show-CallbackManager {
 
     Apply-CallbackManagerTheme $mgrWin $script:state.Theme
     Render-CallbackManagerCards
+    try { $mgrWin.Owner = $window } catch {}
     $mgrWin.Show()
 }
 
