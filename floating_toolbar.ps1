@@ -1036,7 +1036,7 @@ function Show-CallbackToast($cb) {
                 <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
                     <TextBlock Name="TxtToastHeader" Text="REMINDER: CALLBACK DUE NOW!" Foreground="#EF4444" FontWeight="Bold" FontSize="12"/>
                 </StackPanel>
-                <Button Name="BtnToastClose" Grid.Column="1" Content="✕" Background="#334155" Foreground="White" FontWeight="Bold" FontSize="11" Width="22" Height="22" BorderThickness="0" Cursor="Hand" IsCancel="True" ToolTip="Close (Esc)"/>
+                <Button Name="BtnToastClose" Grid.Column="1" Content="X" Background="#334155" Foreground="White" FontWeight="Bold" FontSize="11" Width="22" Height="22" BorderThickness="0" Cursor="Hand" IsCancel="True" ToolTip="Close (Esc)"/>
             </Grid>
 
             <StackPanel Grid.Row="1" Margin="0,0,0,8">
@@ -1161,8 +1161,8 @@ function Show-CallbackToast($cb) {
 
 function Adjust-TimeString([string]$currentTimeStr, [int]$deltaMinutes) {
     try {
-        $parsed = $null
-        $formats = @("h:mm tt", "hh:mm tt", "h:mmtt", "hh:mmtt", "H:mm", "HH:mm")
+        [DateTime]$parsed = [DateTime]::MinValue
+        $formats = [string[]]@("h:mm tt", "hh:mm tt", "h:mmtt", "hh:mmtt", "H:mm", "HH:mm")
         if ([DateTime]::TryParseExact($currentTimeStr.Trim(), $formats, [System.Globalization.CultureInfo]::InvariantCulture, [System.Globalization.DateTimeStyles]::None, [ref]$parsed)) {
             return $parsed.AddMinutes($deltaMinutes).ToString("hh:mm tt")
         }
@@ -1171,6 +1171,16 @@ function Adjust-TimeString([string]$currentTimeStr, [int]$deltaMinutes) {
         }
     } catch {}
     return (Get-Date).AddMinutes($deltaMinutes).ToString("hh:mm tt")
+}
+
+function Adjust-DateString([string]$currentDateStr, [int]$deltaDays) {
+    try {
+        [DateTime]$parsed = [DateTime]::MinValue
+        if ([DateTime]::TryParse($currentDateStr.Trim(), [ref]$parsed)) {
+            return $parsed.AddDays($deltaDays).ToString("yyyy-MM-dd")
+        }
+    } catch {}
+    return (Get-Date).AddDays($deltaDays).ToString("yyyy-MM-dd")
 }
 
 function Set-ClipboardSafe([string]$text) {
@@ -1475,7 +1485,7 @@ function Show-QuickApptModal([switch]$NoShow) {
 
             <Grid Grid.Row="0" Margin="0,0,0,10" Name="ApptHeaderGrid" Background="Transparent" Cursor="SizeAll">
                 <TextBlock Name="TxtApptTitle" Text="BOOK APPOINTMENT" Foreground="#22C55E" FontWeight="Bold" FontSize="13" VerticalAlignment="Center"/>
-                <Button Name="BtnApptClose" Content="✕" HorizontalAlignment="Right" Background="#334155" Foreground="White" FontWeight="Bold" FontSize="11" Width="22" Height="22" BorderThickness="0" Cursor="Hand" IsCancel="True" ToolTip="Close (Esc)"/>
+                <Button Name="BtnApptClose" Content="X" HorizontalAlignment="Right" Background="#334155" Foreground="White" FontWeight="Bold" FontSize="11" Width="22" Height="22" BorderThickness="0" Cursor="Hand" IsCancel="True" ToolTip="Close (Esc)"/>
             </Grid>
 
             <!-- Customer Name & Phone -->
@@ -1646,9 +1656,24 @@ function Show-QuickApptModal([switch]$NoShow) {
         if ($tN) { $tN.Focus() }
     })
 
+    $apptEscAction = {
+        if ($_.Key -eq [System.Windows.Input.Key]::Escape) {
+            $_.Handled = $true
+            $apptWin.Close()
+        }
+    }.GetNewClosure()
+
+    $apptWin.Add_PreviewKeyDown($apptEscAction)
+    foreach ($tbId in @("TbQuickName", "TbQuickPhone", "TbApptDate", "TbApptTime", "TbQuickDate", "TbQuickTime")) {
+        $tb = $apptWin.FindName($tbId)
+        if ($tb) {
+            $tb.Add_PreviewKeyDown($apptEscAction)
+        }
+    }
+
     $apptWin.FindName("BtnApptClose").Add_Click({
         $apptWin.Close()
-    })
+    }.GetNewClosure())
 
     $apptWin.FindName("BtnQuickSkip").Add_Click({
         $script:state.TodayAppts++
@@ -2237,7 +2262,7 @@ function Render-CallbackManagerCards {
     }
 }
 
-function Show-CallbackManager {
+function Show-CallbackManager([switch]$NoShow) {
     if ($script:cbManagerWindow -and $script:cbManagerWindow.IsLoaded) {
         $script:cbManagerWindow.Activate()
         return
@@ -2288,7 +2313,7 @@ function Show-CallbackManager {
                 <TextBlock Name="TxtMgrStatus" Grid.Column="1" Text="Ready" Foreground="#38BDF8" FontSize="11" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="0,0,10,0"/>
                 <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
                     <Button Name="BtnMgrCopyAllExcel" Content="Copy All for Excel" Background="#1E3A8A" Foreground="#93C5FD" FontWeight="Bold" FontSize="11" Padding="8,4" BorderThickness="1" BorderBrush="#2563EB" Margin="0,0,8,0" Cursor="Hand"/>
-                    <Button Name="BtnMgrClose" Content="✕" Background="#DC2626" Foreground="White" FontWeight="Bold" FontSize="12" Width="26" Height="26" BorderThickness="0" Cursor="Hand" IsCancel="True" ToolTip="Close (Esc)"/>
+                    <Button Name="BtnMgrClose" Content="X" Background="#DC2626" Foreground="White" FontWeight="Bold" FontSize="12" Width="26" Height="26" BorderThickness="0" Cursor="Hand" IsCancel="True" ToolTip="Close (Esc)"/>
                 </StackPanel>
             </Grid>
 
@@ -2323,13 +2348,33 @@ function Show-CallbackManager {
                     <!-- Row 2: Date, Time, Quick steppers -->
                     <Grid Grid.Row="2" Margin="0,0,0,6">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="125"/>
-                            <ColumnDefinition Width="105"/>
+                            <ColumnDefinition Width="170"/>
+                            <ColumnDefinition Width="90"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
                         <StackPanel Grid.Column="0" Margin="0,0,6,0">
-                            <TextBlock Name="LblDate" Text="Date (YYYY-MM-DD):" Foreground="#94A3B8" FontSize="10" Margin="0,0,0,2"/>
-                            <TextBox Name="TbDate" Background="#0F172A" Foreground="White" BorderBrush="#475569" Padding="4" FontSize="11"/>
+                            <Grid Margin="0,0,0,2">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Name="LblDate" Grid.Column="0" Text="Date (YYYY-MM-DD):" Foreground="#94A3B8" FontSize="10" VerticalAlignment="Center"/>
+                                <Button Name="BtnMgrCalendar" Grid.Column="1" Content="Pick Date" Background="#1E293B" Foreground="#38BDF8" BorderBrush="#475569" BorderThickness="1" FontSize="9" Padding="5,1" Cursor="Hand" ToolTip="Open Calendar Picker"/>
+                            </Grid>
+                            <Grid>
+                                <TextBox Name="TbDate" Background="#0F172A" Foreground="White" BorderBrush="#475569" Padding="4" FontSize="11"/>
+                                <Popup Name="MgrCalPopup" StaysOpen="False" PlacementTarget="{Binding ElementName=TbDate}" Placement="Bottom">
+                                    <Border Background="#1E293B" BorderBrush="#38BDF8" BorderThickness="1.5" CornerRadius="6" Padding="4">
+                                        <Calendar Name="MgrCalendar"/>
+                                    </Border>
+                                </Popup>
+                            </Grid>
+                            <WrapPanel Orientation="Horizontal" Margin="0,3,0,0">
+                                <Button Name="BtnMgrToday" Content="Today" Background="#334155" Foreground="White" FontSize="9" Padding="4,1" Margin="0,0,2,0" Cursor="Hand"/>
+                                <Button Name="BtnMgrTomorrow" Content="Tom" Background="#334155" Foreground="White" FontSize="9" Padding="4,1" Margin="0,0,2,0" Cursor="Hand"/>
+                                <Button Name="BtnMgrPlusDay" Content="+ Day" Background="#065F46" Foreground="#6EE7B7" FontWeight="Bold" FontSize="9" Padding="4,1" Margin="0,0,2,0" Cursor="Hand" ToolTip="Add 1 Day (Click repeatedly to add days)"/>
+                                <Button Name="BtnMgrMinusDay" Content="- Day" Background="#334155" Foreground="#CBD5E1" FontSize="9" Padding="4,1" Cursor="Hand" ToolTip="Subtract 1 Day"/>
+                            </WrapPanel>
                         </StackPanel>
                         <StackPanel Grid.Column="1" Margin="0,0,6,0">
                             <TextBlock Name="LblTime" Text="Time:" Foreground="#94A3B8" FontSize="10" Margin="0,0,0,2"/>
@@ -2338,8 +2383,6 @@ function Show-CallbackManager {
                         <StackPanel Grid.Column="2" VerticalAlignment="Bottom">
                             <TextBlock Name="LblQuick" Text="Adjust Time (+/-):" Foreground="#94A3B8" FontSize="10" Margin="0,0,0,2"/>
                             <WrapPanel Orientation="Horizontal">
-                                <Button Name="BtnMgrToday" Content="Today" Background="#334155" Foreground="White" FontSize="9" Padding="4,2" Margin="0,0,2,2" Cursor="Hand"/>
-                                <Button Name="BtnMgrTomorrow" Content="Tom" Background="#334155" Foreground="White" FontSize="9" Padding="4,2" Margin="0,0,4,2" Cursor="Hand"/>
                                 <Button Name="BtnMgrM1h" Content="-1h" Background="#334155" Foreground="#CBD5E1" FontSize="9" Padding="4,2" Margin="0,0,2,2" Cursor="Hand"/>
                                 <Button Name="BtnMgrM30m" Content="-30m" Background="#334155" Foreground="#CBD5E1" FontSize="9" Padding="4,2" Margin="0,0,2,2" Cursor="Hand"/>
                                 <Button Name="BtnMgrM15m" Content="-15m" Background="#334155" Foreground="#CBD5E1" FontSize="9" Padding="4,2" Margin="0,0,2,2" Cursor="Hand"/>
@@ -2398,52 +2441,107 @@ function Show-CallbackManager {
     $mgrHeader = $mgrWin.FindName("MgrHeaderBar")
     if ($mgrHeader) { $mgrHeader.Add_MouseLeftButtonDown({ $mgrWin.DragMove() }) }
 
-    $mgrWin.Add_PreviewKeyDown({
-        if ($_.Key -eq [System.Windows.Input.Key]::Escape) {
-            $_.Handled = $true
-            $mgrWin.Close()
-        }
-    })
-
     # Set initial defaults
     $tbD = $mgrWin.FindName("TbDate")
     if ($tbD) { $tbD.Text = (Get-Date).ToString("yyyy-MM-dd") }
     $tbT = $mgrWin.FindName("TbTime")
     if ($tbT) { $tbT.Text = (Get-Date).AddMinutes(30).ToString("hh:mm tt") }
 
-    # Quick set buttons
+    # Calendar Popup Picker
+    $mgrCalBtn = $mgrWin.FindName("BtnMgrCalendar")
+    $mgrCalPop = $mgrWin.FindName("MgrCalPopup")
+    $mgrCalView = $mgrWin.FindName("MgrCalendar")
+
+    if ($mgrCalBtn -and $mgrCalPop) {
+        $mgrCalBtn.Add_Click({
+            $d = $script:cbManagerWindow.FindName("TbDate")
+            if ($d -and $d.Text) {
+                [DateTime]$curD = [DateTime]::MinValue
+                if ([DateTime]::TryParse($d.Text.Trim(), [ref]$curD)) {
+                    $mgrCalView.DisplayDate = $curD
+                    $mgrCalView.SelectedDate = $curD
+                }
+            }
+            $mgrCalPop.IsOpen = $true
+        }.GetNewClosure())
+    }
+
+    if ($mgrCalView -and $mgrCalPop) {
+        $mgrCalView.Add_SelectedDatesChanged({
+            if ($mgrCalView.SelectedDate) {
+                $d = $script:cbManagerWindow.FindName("TbDate")
+                if ($d) { $d.Text = $mgrCalView.SelectedDate.ToString("yyyy-MM-dd") }
+                $mgrCalPop.IsOpen = $false
+            }
+        }.GetNewClosure())
+    }
+
+    # Date Quick Adjust Buttons
     $mgrWin.FindName("BtnMgrToday").Add_Click({
         $d = $script:cbManagerWindow.FindName("TbDate")
         if ($d) { $d.Text = (Get-Date).ToString("yyyy-MM-dd") }
-    })
+    }.GetNewClosure())
     $mgrWin.FindName("BtnMgrTomorrow").Add_Click({
         $d = $script:cbManagerWindow.FindName("TbDate")
         if ($d) { $d.Text = (Get-Date).AddDays(1).ToString("yyyy-MM-dd") }
-    })
+    }.GetNewClosure())
+    $mgrWin.FindName("BtnMgrPlusDay").Add_Click({
+        $d = $script:cbManagerWindow.FindName("TbDate")
+        if ($d) { $d.Text = Adjust-DateString $d.Text 1 }
+    }.GetNewClosure())
+    $mgrWin.FindName("BtnMgrMinusDay").Add_Click({
+        $d = $script:cbManagerWindow.FindName("TbDate")
+        if ($d) { $d.Text = Adjust-DateString $d.Text -1 }
+    }.GetNewClosure())
 
-    $mgrWin.FindName("BtnMgrM1h").Add_Click({ $t = $script:cbManagerWindow.FindName("TbTime"); if ($t) { $t.Text = Adjust-TimeString $t.Text -60 } })
-    $mgrWin.FindName("BtnMgrM30m").Add_Click({ $t = $script:cbManagerWindow.FindName("TbTime"); if ($t) { $t.Text = Adjust-TimeString $t.Text -30 } })
-    $mgrWin.FindName("BtnMgrM15m").Add_Click({ $t = $script:cbManagerWindow.FindName("TbTime"); if ($t) { $t.Text = Adjust-TimeString $t.Text -15 } })
-    $mgrWin.FindName("BtnMgrM10m").Add_Click({ $t = $script:cbManagerWindow.FindName("TbTime"); if ($t) { $t.Text = Adjust-TimeString $t.Text -10 } })
-    $mgrWin.FindName("BtnMgrM5m").Add_Click({ $t = $script:cbManagerWindow.FindName("TbTime"); if ($t) { $t.Text = Adjust-TimeString $t.Text -5 } })
+    # Time Stepper Buttons
+    $mgrWin.FindName("BtnMgrM1h").Add_Click({ $t = $script:cbManagerWindow.FindName("TbTime"); if ($t) { $t.Text = Adjust-TimeString $t.Text -60 } }.GetNewClosure())
+    $mgrWin.FindName("BtnMgrM30m").Add_Click({ $t = $script:cbManagerWindow.FindName("TbTime"); if ($t) { $t.Text = Adjust-TimeString $t.Text -30 } }.GetNewClosure())
+    $mgrWin.FindName("BtnMgrM15m").Add_Click({ $t = $script:cbManagerWindow.FindName("TbTime"); if ($t) { $t.Text = Adjust-TimeString $t.Text -15 } }.GetNewClosure())
+    $mgrWin.FindName("BtnMgrM10m").Add_Click({ $t = $script:cbManagerWindow.FindName("TbTime"); if ($t) { $t.Text = Adjust-TimeString $t.Text -10 } }.GetNewClosure())
+    $mgrWin.FindName("BtnMgrM5m").Add_Click({ $t = $script:cbManagerWindow.FindName("TbTime"); if ($t) { $t.Text = Adjust-TimeString $t.Text -5 } }.GetNewClosure())
 
-    $mgrWin.FindName("BtnMgrP5m").Add_Click({ $t = $script:cbManagerWindow.FindName("TbTime"); if ($t) { $t.Text = Adjust-TimeString $t.Text 5 } })
-    $mgrWin.FindName("BtnMgrP10m").Add_Click({ $t = $script:cbManagerWindow.FindName("TbTime"); if ($t) { $t.Text = Adjust-TimeString $t.Text 10 } })
-    $mgrWin.FindName("BtnMgrP15m").Add_Click({ $t = $script:cbManagerWindow.FindName("TbTime"); if ($t) { $t.Text = Adjust-TimeString $t.Text 15 } })
-    $mgrWin.FindName("BtnMgrP30m").Add_Click({ $t = $script:cbManagerWindow.FindName("TbTime"); if ($t) { $t.Text = Adjust-TimeString $t.Text 30 } })
-    $mgrWin.FindName("BtnMgrP1h").Add_Click({ $t = $script:cbManagerWindow.FindName("TbTime"); if ($t) { $t.Text = Adjust-TimeString $t.Text 60 } })
+    $mgrWin.FindName("BtnMgrP5m").Add_Click({ $t = $script:cbManagerWindow.FindName("TbTime"); if ($t) { $t.Text = Adjust-TimeString $t.Text 5 } }.GetNewClosure())
+    $mgrWin.FindName("BtnMgrP10m").Add_Click({ $t = $script:cbManagerWindow.FindName("TbTime"); if ($t) { $t.Text = Adjust-TimeString $t.Text 10 } }.GetNewClosure())
+    $mgrWin.FindName("BtnMgrP15m").Add_Click({ $t = $script:cbManagerWindow.FindName("TbTime"); if ($t) { $t.Text = Adjust-TimeString $t.Text 15 } }.GetNewClosure())
+    $mgrWin.FindName("BtnMgrP30m").Add_Click({ $t = $script:cbManagerWindow.FindName("TbTime"); if ($t) { $t.Text = Adjust-TimeString $t.Text 30 } }.GetNewClosure())
+    $mgrWin.FindName("BtnMgrP1h").Add_Click({ $t = $script:cbManagerWindow.FindName("TbTime"); if ($t) { $t.Text = Adjust-TimeString $t.Text 60 } }.GetNewClosure())
 
-    # Close button
-    $mgrWin.FindName("BtnMgrClose").Add_Click({ $mgrWin.Close() })
+    # Close button & Escape key handling
+    $closeAction = {
+        if ($script:cbManagerWindow) {
+            $script:cbManagerWindow.Close()
+        }
+    }.GetNewClosure()
+
+    $mgrWin.FindName("BtnMgrClose").Add_Click($closeAction)
+
+    $escAction = {
+        if ($_.Key -eq [System.Windows.Input.Key]::Escape) {
+            $_.Handled = $true
+            if ($script:cbManagerWindow) {
+                $script:cbManagerWindow.Close()
+            }
+        }
+    }.GetNewClosure()
+
+    $mgrWin.Add_PreviewKeyDown($escAction)
+
+    foreach ($tbId in @("TbName", "TbPhone", "TbDate", "TbTime", "TbNotes")) {
+        $tbCtrl = $mgrWin.FindName($tbId)
+        if ($tbCtrl) {
+            $tbCtrl.Add_PreviewKeyDown($escAction)
+        }
+    }
 
     # Filter state
     $script:currentFilter = "all"
 
     # Filter tab events
-    $mgrWin.FindName("BtnFilterAll").Add_Click({ $script:currentFilter = "all"; Apply-CallbackManagerFilterStyles $script:cbManagerWindow $script:state.Theme; Render-CallbackManagerCards })
-    $mgrWin.FindName("BtnFilterDue").Add_Click({ $script:currentFilter = "due"; Apply-CallbackManagerFilterStyles $script:cbManagerWindow $script:state.Theme; Render-CallbackManagerCards })
-    $mgrWin.FindName("BtnFilterPending").Add_Click({ $script:currentFilter = "pending"; Apply-CallbackManagerFilterStyles $script:cbManagerWindow $script:state.Theme; Render-CallbackManagerCards })
-    $mgrWin.FindName("BtnFilterDone").Add_Click({ $script:currentFilter = "done"; Apply-CallbackManagerFilterStyles $script:cbManagerWindow $script:state.Theme; Render-CallbackManagerCards })
+    $mgrWin.FindName("BtnFilterAll").Add_Click({ $script:currentFilter = "all"; Apply-CallbackManagerFilterStyles $script:cbManagerWindow $script:state.Theme; Render-CallbackManagerCards }.GetNewClosure())
+    $mgrWin.FindName("BtnFilterDue").Add_Click({ $script:currentFilter = "due"; Apply-CallbackManagerFilterStyles $script:cbManagerWindow $script:state.Theme; Render-CallbackManagerCards }.GetNewClosure())
+    $mgrWin.FindName("BtnFilterPending").Add_Click({ $script:currentFilter = "pending"; Apply-CallbackManagerFilterStyles $script:cbManagerWindow $script:state.Theme; Render-CallbackManagerCards }.GetNewClosure())
+    $mgrWin.FindName("BtnFilterDone").Add_Click({ $script:currentFilter = "done"; Apply-CallbackManagerFilterStyles $script:cbManagerWindow $script:state.Theme; Render-CallbackManagerCards }.GetNewClosure())
 
     # Add Callback Event
     $mgrWin.FindName("BtnAddCallback").Add_Click({
@@ -2472,7 +2570,7 @@ function Show-CallbackManager {
         if ($tT) { $tT.Text = (Get-Date).AddMinutes(30).ToString("hh:mm tt") }
         Set-MgrStatus "Callback saved for $name!"
         Render-CallbackManagerCards
-    })
+    }.GetNewClosure())
 
     # Copy All for Excel (TSV)
     $mgrWin.FindName("BtnMgrCopyAllExcel").Add_Click({
@@ -2485,7 +2583,7 @@ function Show-CallbackManager {
         $tsv = $lines -join "`r`n"
         Set-ClipboardSafe $tsv
         Set-MgrStatus "All callbacks copied in Excel format!"
-    })
+    }.GetNewClosure())
 
     $mgrWin.Add_Closed({
         $script:cbManagerWindow = $null
@@ -2493,8 +2591,10 @@ function Show-CallbackManager {
 
     Apply-CallbackManagerTheme $mgrWin $script:state.Theme
     Render-CallbackManagerCards
-    try { $mgrWin.Owner = $window } catch {}
-    $mgrWin.Show()
+    if (!$NoShow) {
+        try { $mgrWin.Owner = $window } catch {}
+        $mgrWin.ShowDialog() | Out-Null
+    }
 }
 
 # Session state saver
@@ -2782,7 +2882,7 @@ if ($Test) {
     }
     if ($ModalScreenshot) {
         if ($ModalType -eq "callback") {
-            Show-CallbackManager
+            Show-CallbackManager -NoShow
             $mgrBorder = $script:cbManagerWindow.Content
             $mgrBorder.Measure([System.Windows.Size]::new(720, 640))
             $mgrBorder.Arrange([System.Windows.Rect]::new(0, 0, 720, 640))
