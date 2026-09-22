@@ -1,10 +1,10 @@
 @echo off
 setlocal enabledelayedexpansion
-title Daily Work Hub - PC Setup & Deployment Tool
+title Daily Work Hub - PC Setup and Deployment Tool
 color 0B
 
 echo ======================================================================
-echo           DAILY WORK HUB - PC SETUP & DEPLOYMENT TOOL
+echo           DAILY WORK HUB - PC SETUP AND DEPLOYMENT TOOL
 echo ======================================================================
 echo.
 
@@ -15,12 +15,28 @@ if "%SOURCE_DIR:~-1%"=="\" set "SOURCE_DIR=%SOURCE_DIR:~0,-1%"
 if "%1"=="--github" goto do_github
 if "%1"=="--update" goto do_github
 
+if /i "%SOURCE_DIR%"=="%TARGET_DIR%" goto menu_local
+goto menu_external
+
+:menu_local
+echo Note: Running directly inside target folder %TARGET_DIR%
+echo   [1] Verify Setup and Refresh Desktop Shortcuts
+echo   [2] Pull latest release directly from GitHub (Update)
+echo.
+set "MODE=2"
+set /p "MODE=Select option (1 or 2, default is 2 to update from GitHub): "
+goto check_mode
+
+:menu_external
 echo Deployment Source:
 echo   [1] Install/Deploy from this folder (Default)
 echo   [2] Pull latest release directly from GitHub (No Git required)
 echo.
 set "MODE=1"
 set /p "MODE=Select option (1 or 2, default is 1): "
+goto check_mode
+
+:check_mode
 if "%MODE%"=="2" goto do_github
 goto start_deploy
 
@@ -75,66 +91,64 @@ echo       - Folders created / verified.
 echo.
 
 echo [3/5] Deploying Application Files...
-:: Preserve existing shifts.json and callbacks.json if present
+:: Preserve existing data files with pre-deployment backups
+for /f %%I in ('powershell -NoProfile -Command "Get-Date -Format yyyyMMdd_HHmmss"') do set "timestamp=%%I"
 if exist "%TARGET_DIR%\data\shifts.json" (
     echo       - Found existing shifts.json! Creating automatic backup...
-    for /f "tokens=2 delims==" %%I in ('wmic os get localdatetime /value') do set "dt=%%I"
-    set "timestamp=!dt:~0,8!_!dt:~8,6!"
     copy /y "%TARGET_DIR%\data\shifts.json" "%TARGET_DIR%\data\backups\shifts_backup_predeploy_!timestamp!.json" >nul
     echo       - Backup saved to: %TARGET_DIR%\data\backups\shifts_backup_predeploy_!timestamp!.json
 )
 if exist "%TARGET_DIR%\data\callbacks.json" (
     echo       - Found existing callbacks.json! Creating automatic backup...
-    for /f "tokens=2 delims==" %%I in ('wmic os get localdatetime /value') do set "dt=%%I"
-    set "timestamp=!dt:~0,8!_!dt:~8,6!"
     copy /y "%TARGET_DIR%\data\callbacks.json" "%TARGET_DIR%\data\backups\callbacks_backup_predeploy_!timestamp!.json" >nul
     echo       - Backup saved to: %TARGET_DIR%\data\backups\callbacks_backup_predeploy_!timestamp!.json
 )
 if exist "%TARGET_DIR%\data\calls.json" (
     echo       - Found existing calls.json! Creating automatic backup...
-    for /f "tokens=2 delims==" %%I in ('wmic os get localdatetime /value') do set "dt=%%I"
-    set "timestamp=!dt:~0,8!_!dt:~8,6!"
     copy /y "%TARGET_DIR%\data\calls.json" "%TARGET_DIR%\data\backups\calls_backup_predeploy_!timestamp!.json" >nul
     echo       - Backup saved to: %TARGET_DIR%\data\backups\calls_backup_predeploy_!timestamp!.json
 )
 if exist "%TARGET_DIR%\data\sales_reps.json" (
     echo       - Found existing sales_reps.json! Creating automatic backup...
-    for /f "tokens=2 delims==" %%I in ('wmic os get localdatetime /value') do set "dt=%%I"
-    set "timestamp=!dt:~0,8!_!dt:~8,6!"
     copy /y "%TARGET_DIR%\data\sales_reps.json" "%TARGET_DIR%\data\backups\sales_reps_backup_predeploy_!timestamp!.json" >nul
     echo       - Backup saved to: %TARGET_DIR%\data\backups\sales_reps_backup_predeploy_!timestamp!.json
 )
 
 :: Copy Core Files (excluding git, tests, and temporary storage)
-robocopy "%SOURCE_DIR%" "%TARGET_DIR%" floating_toolbar.ps1 Launch_Floating_Toolbar.bat Verify_PC_Compatibility.bat version.json index.html app.js styles.css popup.html popup.js popup.css README.md REQUIREMENTS.md optima_reference.html Launch_Optima_Reference.bat /IS /IT /nfl /ndl /njh /njs
+if /i "%SOURCE_DIR%"=="%TARGET_DIR%" goto skip_copy
+goto do_copy
+
+:skip_copy
+echo       - Running directly from target directory %TARGET_DIR%
+echo       - Core application files are already in place; skipping self-copy.
+goto after_copy
+
+:do_copy
+robocopy "%SOURCE_DIR%" "%TARGET_DIR%" floating_toolbar.ps1 Launch_Floating_Toolbar.bat Verify_PC_Compatibility.bat version.json index.html app.js styles.css popup.html popup.js popup.css README.md REQUIREMENTS.md optima_reference.html Launch_Optima_Reference.bat /IS /IT /nfl /ndl /njh /njs /R:1 /W:1
+if errorlevel 8 (
+    echo       - [WARNING] Some files could not be copied. Please close open browser tabs or applications and retry.
+) else (
+    echo       - Core application files successfully deployed.
+)
 
 :: Copy initial data files if target doesn't have them yet (NEVER overwrite existing data)
 if not exist "%TARGET_DIR%\data\shifts.json" (
-    if exist "%SOURCE_DIR%\data\shifts.json" (
-        copy /y "%SOURCE_DIR%\data\shifts.json" "%TARGET_DIR%\data\shifts.json" >nul
-    )
+    if exist "%SOURCE_DIR%\data\shifts.json" copy /y "%SOURCE_DIR%\data\shifts.json" "%TARGET_DIR%\data\shifts.json" >nul
 )
 if not exist "%TARGET_DIR%\data\callbacks.json" (
-    if exist "%SOURCE_DIR%\data\callbacks.json" (
-        copy /y "%SOURCE_DIR%\data\callbacks.json" "%TARGET_DIR%\data\callbacks.json" >nul
-    )
+    if exist "%SOURCE_DIR%\data\callbacks.json" copy /y "%SOURCE_DIR%\data\callbacks.json" "%TARGET_DIR%\data\callbacks.json" >nul
 )
 if not exist "%TARGET_DIR%\data\calls.json" (
-    if exist "%SOURCE_DIR%\data\calls.json" (
-        copy /y "%SOURCE_DIR%\data\calls.json" "%TARGET_DIR%\data\calls.json" >nul
-    )
+    if exist "%SOURCE_DIR%\data\calls.json" copy /y "%SOURCE_DIR%\data\calls.json" "%TARGET_DIR%\data\calls.json" >nul
 )
 if not exist "%TARGET_DIR%\data\sales_reps.json" (
-    if exist "%SOURCE_DIR%\data\sales_reps.json" (
-        copy /y "%SOURCE_DIR%\data\sales_reps.json" "%TARGET_DIR%\data\sales_reps.json" >nul
-    )
+    if exist "%SOURCE_DIR%\data\sales_reps.json" copy /y "%SOURCE_DIR%\data\sales_reps.json" "%TARGET_DIR%\data\sales_reps.json" >nul
 )
 if not exist "%TARGET_DIR%\data\shifts_data.js" (
-    if exist "%SOURCE_DIR%\data\shifts_data.js" (
-        copy /y "%SOURCE_DIR%\data\shifts_data.js" "%TARGET_DIR%\data\shifts_data.js" >nul
-    )
+    if exist "%SOURCE_DIR%\data\shifts_data.js" copy /y "%SOURCE_DIR%\data\shifts_data.js" "%TARGET_DIR%\data\shifts_data.js" >nul
 )
-echo       - Core application files successfully deployed.
+
+:after_copy
 echo.
 
 echo [4/5] Creating Desktop Shortcuts...
