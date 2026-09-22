@@ -2442,22 +2442,25 @@ function Show-CallbackManager([switch]$NoShow) {
     if ($mgrHeader) { $mgrHeader.Add_MouseLeftButtonDown({ $mgrWin.DragMove() }) }
 
     # Set initial defaults
-    $tbD = $mgrWin.FindName("TbDate")
-    if ($tbD) { $tbD.Text = (Get-Date).ToString("yyyy-MM-dd") }
-    $tbT = $mgrWin.FindName("TbTime")
-    if ($tbT) { $tbT.Text = (Get-Date).AddMinutes(30).ToString("hh:mm tt") }
-
-    # Calendar Popup Picker
+    $tbName = $mgrWin.FindName("TbName")
+    $tbPhone = $mgrWin.FindName("TbPhone")
+    $tbDate = $mgrWin.FindName("TbDate")
+    $tbTime = $mgrWin.FindName("TbTime")
+    $tbNotes = $mgrWin.FindName("TbNotes")
     $mgrCalBtn = $mgrWin.FindName("BtnMgrCalendar")
     $mgrCalPop = $mgrWin.FindName("MgrCalPopup")
     $mgrCalView = $mgrWin.FindName("MgrCalendar")
 
+    # Set initial defaults
+    if ($tbDate) { $tbDate.Text = (Get-Date).ToString("yyyy-MM-dd") }
+    if ($tbTime) { $tbTime.Text = (Get-Date).AddMinutes(30).ToString("hh:mm tt") }
+
+    # Calendar Popup Picker
     if ($mgrCalBtn -and $mgrCalPop) {
         $mgrCalBtn.Add_Click({
-            $d = $script:cbManagerWindow.FindName("TbDate")
-            if ($d -and $d.Text) {
+            if ($tbDate -and $tbDate.Text) {
                 [DateTime]$curD = [DateTime]::MinValue
-                if ([DateTime]::TryParse($d.Text.Trim(), [ref]$curD)) {
+                if ([DateTime]::TryParse($tbDate.Text.Trim(), [ref]$curD)) {
                     $mgrCalView.DisplayDate = $curD
                     $mgrCalView.SelectedDate = $curD
                 }
@@ -2469,8 +2472,7 @@ function Show-CallbackManager([switch]$NoShow) {
     if ($mgrCalView -and $mgrCalPop) {
         $mgrCalView.Add_SelectedDatesChanged({
             if ($mgrCalView.SelectedDate) {
-                $d = $script:cbManagerWindow.FindName("TbDate")
-                if ($d) { $d.Text = $mgrCalView.SelectedDate.ToString("yyyy-MM-dd") }
+                $tbDate.Text = $mgrCalView.SelectedDate.ToString("yyyy-MM-dd")
                 $mgrCalPop.IsOpen = $false
             }
         }.GetNewClosure())
@@ -2478,40 +2480,34 @@ function Show-CallbackManager([switch]$NoShow) {
 
     # Date Quick Adjust Buttons
     $mgrWin.FindName("BtnMgrToday").Add_Click({
-        $d = $script:cbManagerWindow.FindName("TbDate")
-        if ($d) { $d.Text = (Get-Date).ToString("yyyy-MM-dd") }
+        $tbDate.Text = (Get-Date).ToString("yyyy-MM-dd")
     }.GetNewClosure())
     $mgrWin.FindName("BtnMgrTomorrow").Add_Click({
-        $d = $script:cbManagerWindow.FindName("TbDate")
-        if ($d) { $d.Text = (Get-Date).AddDays(1).ToString("yyyy-MM-dd") }
+        $tbDate.Text = (Get-Date).AddDays(1).ToString("yyyy-MM-dd")
     }.GetNewClosure())
     $mgrWin.FindName("BtnMgrPlusDay").Add_Click({
-        $d = $script:cbManagerWindow.FindName("TbDate")
-        if ($d) { $d.Text = Adjust-DateString $d.Text 1 }
+        $tbDate.Text = Adjust-DateString $tbDate.Text 1
     }.GetNewClosure())
     $mgrWin.FindName("BtnMgrMinusDay").Add_Click({
-        $d = $script:cbManagerWindow.FindName("TbDate")
-        if ($d) { $d.Text = Adjust-DateString $d.Text -1 }
+        $tbDate.Text = Adjust-DateString $tbDate.Text -1
     }.GetNewClosure())
 
     # Time Stepper Buttons
-    $mgrWin.FindName("BtnMgrM1h").Add_Click({ $t = $script:cbManagerWindow.FindName("TbTime"); if ($t) { $t.Text = Adjust-TimeString $t.Text -60 } }.GetNewClosure())
-    $mgrWin.FindName("BtnMgrM30m").Add_Click({ $t = $script:cbManagerWindow.FindName("TbTime"); if ($t) { $t.Text = Adjust-TimeString $t.Text -30 } }.GetNewClosure())
-    $mgrWin.FindName("BtnMgrM15m").Add_Click({ $t = $script:cbManagerWindow.FindName("TbTime"); if ($t) { $t.Text = Adjust-TimeString $t.Text -15 } }.GetNewClosure())
-    $mgrWin.FindName("BtnMgrM10m").Add_Click({ $t = $script:cbManagerWindow.FindName("TbTime"); if ($t) { $t.Text = Adjust-TimeString $t.Text -10 } }.GetNewClosure())
-    $mgrWin.FindName("BtnMgrM5m").Add_Click({ $t = $script:cbManagerWindow.FindName("TbTime"); if ($t) { $t.Text = Adjust-TimeString $t.Text -5 } }.GetNewClosure())
+    $mgrWin.FindName("BtnMgrM1h").Add_Click({ $tbTime.Text = Adjust-TimeString $tbTime.Text -60 }.GetNewClosure())
+    $mgrWin.FindName("BtnMgrM30m").Add_Click({ $tbTime.Text = Adjust-TimeString $tbTime.Text -30 }.GetNewClosure())
+    $mgrWin.FindName("BtnMgrM15m").Add_Click({ $tbTime.Text = Adjust-TimeString $tbTime.Text -15 }.GetNewClosure())
+    $mgrWin.FindName("BtnMgrM10m").Add_Click({ $tbTime.Text = Adjust-TimeString $tbTime.Text -10 }.GetNewClosure())
+    $mgrWin.FindName("BtnMgrM5m").Add_Click({ $tbTime.Text = Adjust-TimeString $tbTime.Text -5 }.GetNewClosure())
 
-    $mgrWin.FindName("BtnMgrP5m").Add_Click({ $t = $script:cbManagerWindow.FindName("TbTime"); if ($t) { $t.Text = Adjust-TimeString $t.Text 5 } }.GetNewClosure())
-    $mgrWin.FindName("BtnMgrP10m").Add_Click({ $t = $script:cbManagerWindow.FindName("TbTime"); if ($t) { $t.Text = Adjust-TimeString $t.Text 10 } }.GetNewClosure())
-    $mgrWin.FindName("BtnMgrP15m").Add_Click({ $t = $script:cbManagerWindow.FindName("TbTime"); if ($t) { $t.Text = Adjust-TimeString $t.Text 15 } }.GetNewClosure())
-    $mgrWin.FindName("BtnMgrP30m").Add_Click({ $t = $script:cbManagerWindow.FindName("TbTime"); if ($t) { $t.Text = Adjust-TimeString $t.Text 30 } }.GetNewClosure())
-    $mgrWin.FindName("BtnMgrP1h").Add_Click({ $t = $script:cbManagerWindow.FindName("TbTime"); if ($t) { $t.Text = Adjust-TimeString $t.Text 60 } }.GetNewClosure())
+    $mgrWin.FindName("BtnMgrP5m").Add_Click({ $tbTime.Text = Adjust-TimeString $tbTime.Text 5 }.GetNewClosure())
+    $mgrWin.FindName("BtnMgrP10m").Add_Click({ $tbTime.Text = Adjust-TimeString $tbTime.Text 10 }.GetNewClosure())
+    $mgrWin.FindName("BtnMgrP15m").Add_Click({ $tbTime.Text = Adjust-TimeString $tbTime.Text 15 }.GetNewClosure())
+    $mgrWin.FindName("BtnMgrP30m").Add_Click({ $tbTime.Text = Adjust-TimeString $tbTime.Text 30 }.GetNewClosure())
+    $mgrWin.FindName("BtnMgrP1h").Add_Click({ $tbTime.Text = Adjust-TimeString $tbTime.Text 60 }.GetNewClosure())
 
     # Close button & Escape key handling
     $closeAction = {
-        if ($script:cbManagerWindow) {
-            $script:cbManagerWindow.Close()
-        }
+        $mgrWin.Close()
     }.GetNewClosure()
 
     $mgrWin.FindName("BtnMgrClose").Add_Click($closeAction)
@@ -2519,16 +2515,13 @@ function Show-CallbackManager([switch]$NoShow) {
     $escAction = {
         if ($_.Key -eq [System.Windows.Input.Key]::Escape) {
             $_.Handled = $true
-            if ($script:cbManagerWindow) {
-                $script:cbManagerWindow.Close()
-            }
+            $mgrWin.Close()
         }
     }.GetNewClosure()
 
     $mgrWin.Add_PreviewKeyDown($escAction)
 
-    foreach ($tbId in @("TbName", "TbPhone", "TbDate", "TbTime", "TbNotes")) {
-        $tbCtrl = $mgrWin.FindName($tbId)
+    foreach ($tbCtrl in @($tbName, $tbPhone, $tbDate, $tbTime, $tbNotes)) {
         if ($tbCtrl) {
             $tbCtrl.Add_PreviewKeyDown($escAction)
         }
@@ -2538,25 +2531,19 @@ function Show-CallbackManager([switch]$NoShow) {
     $script:currentFilter = "all"
 
     # Filter tab events
-    $mgrWin.FindName("BtnFilterAll").Add_Click({ $script:currentFilter = "all"; Apply-CallbackManagerFilterStyles $script:cbManagerWindow $script:state.Theme; Render-CallbackManagerCards }.GetNewClosure())
-    $mgrWin.FindName("BtnFilterDue").Add_Click({ $script:currentFilter = "due"; Apply-CallbackManagerFilterStyles $script:cbManagerWindow $script:state.Theme; Render-CallbackManagerCards }.GetNewClosure())
-    $mgrWin.FindName("BtnFilterPending").Add_Click({ $script:currentFilter = "pending"; Apply-CallbackManagerFilterStyles $script:cbManagerWindow $script:state.Theme; Render-CallbackManagerCards }.GetNewClosure())
-    $mgrWin.FindName("BtnFilterDone").Add_Click({ $script:currentFilter = "done"; Apply-CallbackManagerFilterStyles $script:cbManagerWindow $script:state.Theme; Render-CallbackManagerCards }.GetNewClosure())
+    $mgrWin.FindName("BtnFilterAll").Add_Click({ $script:currentFilter = "all"; Apply-CallbackManagerFilterStyles $mgrWin $script:state.Theme; Render-CallbackManagerCards }.GetNewClosure())
+    $mgrWin.FindName("BtnFilterDue").Add_Click({ $script:currentFilter = "due"; Apply-CallbackManagerFilterStyles $mgrWin $script:state.Theme; Render-CallbackManagerCards }.GetNewClosure())
+    $mgrWin.FindName("BtnFilterPending").Add_Click({ $script:currentFilter = "pending"; Apply-CallbackManagerFilterStyles $mgrWin $script:state.Theme; Render-CallbackManagerCards }.GetNewClosure())
+    $mgrWin.FindName("BtnFilterDone").Add_Click({ $script:currentFilter = "done"; Apply-CallbackManagerFilterStyles $mgrWin $script:state.Theme; Render-CallbackManagerCards }.GetNewClosure())
 
     # Add Callback Event
     $mgrWin.FindName("BtnAddCallback").Add_Click({
-        $tN = $script:cbManagerWindow.FindName("TbName")
-        $tP = $script:cbManagerWindow.FindName("TbPhone")
-        $tD = $script:cbManagerWindow.FindName("TbDate")
-        $tT = $script:cbManagerWindow.FindName("TbTime")
-        $tNt = $script:cbManagerWindow.FindName("TbNotes")
-
-        $name = if ($tN -and $tN.Text) { $tN.Text.Trim() } else { "" }
-        $phone = if ($tP -and $tP.Text) { $tP.Text.Trim() } else { "" }
+        $name = if ($tbName -and $tbName.Text) { $tbName.Text.Trim() } else { "" }
+        $phone = if ($tbPhone -and $tbPhone.Text) { $tbPhone.Text.Trim() } else { "" }
         $email = ""
-        $date = if ($tD -and $tD.Text) { $tD.Text.Trim() } else { (Get-Date).ToString("yyyy-MM-dd") }
-        $time = if ($tT -and $tT.Text) { $tT.Text.Trim() } else { (Get-Date).AddMinutes(30).ToString("hh:mm tt") }
-        $notes = if ($tNt -and $tNt.Text) { $tNt.Text.Trim() } else { "" }
+        $date = if ($tbDate -and $tbDate.Text) { $tbDate.Text.Trim() } else { (Get-Date).ToString("yyyy-MM-dd") }
+        $time = if ($tbTime -and $tbTime.Text) { $tbTime.Text.Trim() } else { (Get-Date).AddMinutes(30).ToString("hh:mm tt") }
+        $notes = if ($tbNotes -and $tbNotes.Text) { $tbNotes.Text.Trim() } else { "" }
 
         if ([string]::IsNullOrWhiteSpace($name) -and [string]::IsNullOrWhiteSpace($phone)) {
             Set-MgrStatus "Please enter at least Name or Phone."
@@ -2564,10 +2551,10 @@ function Show-CallbackManager([switch]$NoShow) {
         }
 
         Add-CallbackItem $name $phone $email $date $time $notes
-        if ($tN) { $tN.Text = "" }
-        if ($tP) { $tP.Text = "" }
-        if ($tNt) { $tNt.Text = "" }
-        if ($tT) { $tT.Text = (Get-Date).AddMinutes(30).ToString("hh:mm tt") }
+        if ($tbName) { $tbName.Text = "" }
+        if ($tbPhone) { $tbPhone.Text = "" }
+        if ($tbNotes) { $tbNotes.Text = "" }
+        if ($tbTime) { $tbTime.Text = (Get-Date).AddMinutes(30).ToString("hh:mm tt") }
         Set-MgrStatus "Callback saved for $name!"
         Render-CallbackManagerCards
     }.GetNewClosure())
